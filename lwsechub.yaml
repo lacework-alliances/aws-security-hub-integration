@@ -1,0 +1,13 @@
+lwsechub:
+  logger:
+    debug: true
+
+  server:
+    tls_port: 8443
+      cert_file_path: ""
+      cert_key_path: ""
+
+  aws:
+    region: "us-east-1"
+    arn: ""
+    account_id: ""

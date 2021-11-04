@@ -8,9 +8,9 @@ import (
 
 // Config stores the application configuration details
 type Config struct {
-	Logger    loggerConfig
-	AWS       awsConfig
-	Server    serverConfig
+	Logger loggerConfig
+	AWS    awsConfig
+	Server serverConfig
 }
 
 // loggerConfig stores the log related configuration
@@ -20,8 +20,9 @@ type loggerConfig struct {
 
 // awsConfig stores the AWS related configuration
 type awsConfig struct {
-	Role	string
-	Region  string
+	AccountID string
+	Region    string
+	ARN       string
 }
 
 // serverConfig stores the web related configuration
@@ -61,21 +62,27 @@ func Init(cfgFile string) {
 	if viper.Get("server.cert_key_path") == nil {
 		viper.Set("server.cert_key_path", "")
 	}
-	if viper.Get("aws.role") == nil {
-		viper.Set("aws.role", "")
-	}
 	if viper.Get("aws.region") == nil {
 		viper.Set("aws.region", "")
+	}
+	if viper.Get("aws.arn") == nil {
+		viper.Set("aws.arn", "")
+	}
+	if viper.Get("aws.account_id") == nil {
+		viper.Set("aws.account_id", "")
 	}
 }
 
 // GetConfig is used to pull the configuration into the application
 func GetConfig() Config {
 	return Config{
-		Logger: loggerConfig{Debug: viper.GetBool("logger.debug")},
+		Logger: loggerConfig{
+			Debug: viper.GetBool("logger.debug"),
+		},
 		AWS: awsConfig{
-			Role: viper.GetString("aws.role"),
-			Region: viper.GetString("aws.region"),
+			AccountID: viper.GetString("aws.account_id"),
+			Region:    viper.GetString("aws.region"),
+			ARN:       viper.GetString("aws.arn"),
 		},
 		Server: serverConfig{
 			TLSPort:      viper.GetString("server.tls_port"),
@@ -93,4 +100,3 @@ func (c *Config) Print() {
 	}
 	log.Logger.Debugf("%v", string(cfgBytes))
 }
-
