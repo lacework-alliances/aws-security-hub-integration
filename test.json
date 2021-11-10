@@ -1,0 +1,39 @@
+[
+  {
+    "AwsAccountId": "950194951070",
+    "CreatedAt": "2021-11-05T07:27:14Z",
+    "Description": " For account: 950194951070   (lacework-customerdemo) : User AssumedRole/950194951070:AWSServiceRoleForConfig  used service secretsmanager.amazonaws.com (and 5 more) using AwsApiCall  for the first time ",
+    "GeneratorId": "Aws",
+    "Id": "4d31b270-4935-5a4d-8734-794e5ff8b385",
+    "ProductArn": "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default",
+    "Resources": [
+      {
+        "Details": {
+          "Other": {
+            "DescribeClusters": "dax.amazonaws.com",
+            "DescribeReplicationInstances": "dms.amazonaws.com",
+            "GetDetector": "guardduty.amazonaws.com",
+            "ListClusters": "elasticmapreduce.amazonaws.com",
+            "ListDetectors": "guardduty.amazonaws.com",
+            "ListNotebookInstances": "sagemaker.amazonaws.com",
+            "ListSecrets": "secretsmanager.amazonaws.com"
+          }
+        },
+        "Id": "AssumedRole/950194951070:AWSServiceRoleForConfig",
+        "Partition": "aws",
+        "Region": "us-east-2",
+        "Type": "Other"
+      }
+    ],
+    "SchemaVersion": "2018-10-08",
+    "Severity": {
+      "Label": "MEDIUM"
+    },
+    "SourceUrl": "https://customerdemo.lacework.net/ui/investigate/Event/104217?accountName=CUSTOMERDEMO&startTime=1636092000000&endTime=1636095600000&ci=CUSTOMER_721595854C4272A5AC58B9FAA369C0ABB05564A91DA0ED9",
+    "Title": " For account: 950194951070   (lacework-customerdemo) : User AssumedRole/950194951070:AWSServiceRoleForConfig  used service secretsmanager.amazonaws.com (and 5 more) using AwsApiCall  for the first time ",
+    "Types": [
+      "Unusual Behavior/Application"
+    ],
+    "UpdatedAt": "2021-11-05T07:27:14Z"
+  }
+]
