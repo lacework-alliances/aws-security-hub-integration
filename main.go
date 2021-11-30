@@ -8,19 +8,18 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/securityhub"
-)
-
-const (
-	ARN    = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
-	SCHEMA = "2018-10-08"
+	"github.com/lacework-dev/aws-security-hub-integration/internal/findings"
+	"github.com/lacework-dev/aws-security-hub-integration/pkg/types"
 )
 
 func main() {
-	lambda.Start(handler)
+	eventMap := findings.InitMap()
+	ctx := context.WithValue(context.Background(), "eventMap", eventMap)
+	lambda.StartWithContext(ctx, handler)
 }
 
 func handler(ctx context.Context, e events.CloudWatchEvent) {
-	var event LaceworkEvent
+	var event types.LaceworkEvent
 	batch := securityhub.BatchImportFindingsInput{}
 	input, err := json.Marshal(&e)
 	if err != nil {
@@ -30,18 +29,17 @@ func handler(ctx context.Context, e events.CloudWatchEvent) {
 	if err != nil {
 		fmt.Println("error while unmarshal of input to event: ", err)
 	}
-	fmt.Printf("%s\n\n", input)
-	findings := eventToASFF(event)
-	batch.Findings = findings
+	f := findings.EventToASFF(ctx, event)
+	batch.Findings = f
 	sess, err := session.NewSession()
 	if err != nil {
 		fmt.Println("error while creating aws session: ", err)
 	}
-	data, err := json.Marshal(batch)
+/*	data, err := json.Marshal(batch)
 	if err != nil {
 		fmt.Println("error while marshaling batch: ", err)
 	}
-	fmt.Printf("%s\n\n", data)
+	fmt.Printf("%s\n\n", data)*/
 	svc := securityhub.New(sess)
 	output, err := svc.BatchImportFindings(&batch)
 	if err != nil {
