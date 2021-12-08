@@ -228,6 +228,8 @@ func mapToResource(data []types.Data) []*securityhub.Resource {
 			res = resources.MapAwsApiTracker(d, res)
 		case "CloudTrailCep":
 			res = resources.MapCloudTrailCep(d, res)
+		default:
+			res = resources.MapDefault(d, res)
 		}
 		resourceList = append(resourceList, &res)
 	}

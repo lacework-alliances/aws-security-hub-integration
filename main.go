@@ -35,11 +35,6 @@ func handler(ctx context.Context, e events.CloudWatchEvent) {
 	if err != nil {
 		fmt.Println("error while creating aws session: ", err)
 	}
-/*	data, err := json.Marshal(batch)
-	if err != nil {
-		fmt.Println("error while marshaling batch: ", err)
-	}
-	fmt.Printf("%s\n\n", data)*/
 	svc := securityhub.New(sess)
 	output, err := svc.BatchImportFindings(&batch)
 	if err != nil {
