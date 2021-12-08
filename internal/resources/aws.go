@@ -7,13 +7,8 @@ import (
 )
 
 func MapDefault(d types.Data, res securityhub.Resource) securityhub.Resource {
-	res.Details = &securityhub.ResourceDetails{}
-	res.Details.Other = make(map[string]*string)
 	res.Type = aws.String("Other")
-	res.Id = aws.String(d.EntityMap.CtUser[0].Username)
-	res.Partition = aws.String("aws")
-	res.Region = aws.String(d.EntityMap.Region[0].Region)
-
+	res.Id = aws.String(d.EventActor)
 	return res
 }
 func MapAwsApiTracker(d types.Data, res securityhub.Resource) securityhub.Resource {
