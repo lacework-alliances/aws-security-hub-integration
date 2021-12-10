@@ -6,12 +6,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-dev/aws-security-hub-integration/internal/resources"
 	"github.com/lacework-dev/aws-security-hub-integration/pkg/types"
+	"log"
 	"time"
 )
 
 const (
 	TtpInitialAccess      = "TTPs/Initial Access"
 	TtpDiscovery          = "TTPs/Discovery"
+	NewViolation          = "Industry and Regulatory Standards"
 	TtpPrivilege          = "TTPs/Privilege Escalation"
 	TtpCredential         = "TTPs/Credential Access"
 	TtpCollection         = "TTPs/Collection"
@@ -117,8 +119,8 @@ func InitMap() map[string]string {
 	eventMap["ConfigServiceChange"] = TtpDiscovery
 	eventMap["CloudTrailDefaultAlert"] = TtpCollection
 
-	eventMap["ComplianceChanged"] = TtpDiscovery
-	eventMap["NewViolations"] = TtpDiscovery
+	eventMap["ComplianceChanged"] = NewViolation
+	eventMap["NewViolations"] = NewViolation
 
 	eventMap["SuspiciousApplicationLaunched"] = SensitiveSecurity
 	eventMap["SuspiciousUserLoginMultiGEOs"] = SensitiveSecurity
@@ -192,14 +194,20 @@ func InitMap() map[string]string {
 
 func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.AwsSecurityFinding {
 	var fs []*securityhub.AwsSecurityFinding
+	var desc string
 	eventMap := ctx.Value("eventMap")
 	m, ok := eventMap.(map[string]string)
 	if !ok {
 		// Do error stuff
 	}
 
+	if len(le.Detail.Summary) >= 255 {
+		desc = le.Detail.Summary[:255]
+	} else {
+		desc = le.Detail.Summary
+	}
 	finding := securityhub.AwsSecurityFinding{
-		AwsAccountId:  aws.String(le.Account),
+		AwsAccountId:  aws.String(resources.GetIncomingAccount(le.Detail.Summary)),
 		GeneratorId:   aws.String(le.Detail.EventCategory),
 		SchemaVersion: aws.String(SCHEMA),
 		Id:            aws.String(le.ID),
@@ -208,11 +216,12 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 		CreatedAt:     aws.String(le.Time.Format(time.RFC3339)),
 		UpdatedAt:     aws.String(le.Time.Format(time.RFC3339)),
 		Severity:      getSeverity(le.Detail.Severity),
-		Title:         aws.String(le.Detail.Summary),
+		Title:         aws.String(desc),
 		Description:   aws.String(le.Detail.Summary),
 		SourceUrl:     aws.String(le.Detail.Link),
 		Resources:     mapToResource(le.Detail.EventDetails.Data),
 	}
+	log.Printf("Account: %s | Category: %s\n", le.Detail.Account, le.Detail.EventCategory)
 	fs = append(fs, &finding)
 
 	return fs
@@ -228,6 +237,8 @@ func mapToResource(data []types.Data) []*securityhub.Resource {
 			res = resources.MapAwsApiTracker(d, res)
 		case "CloudTrailCep":
 			res = resources.MapCloudTrailCep(d, res)
+		case "NewViolation", "ComplianceChanged":
+			res = resources.MapAwsCompliance(d, res)
 		default:
 			res = resources.MapDefault(d, res)
 		}

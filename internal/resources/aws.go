@@ -4,6 +4,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-dev/aws-security-hub-integration/pkg/types"
+	"regexp"
+	"strings"
 )
 
 func MapDefault(d types.Data, res securityhub.Resource) securityhub.Resource {
@@ -11,6 +13,24 @@ func MapDefault(d types.Data, res securityhub.Resource) securityhub.Resource {
 	res.Id = aws.String(d.EventActor)
 	return res
 }
+
+func MapAwsCompliance(d types.Data, res securityhub.Resource) securityhub.Resource {
+	res.Details = &securityhub.ResourceDetails{}
+	res.Type = aws.String("Other")
+	res.Id = aws.String(d.EntityMap.NewViolation[0].Resource)
+	res.Partition = aws.String("aws")
+	strSplit := strings.Split(d.EntityMap.NewViolation[0].Resource, ":")
+	res.Region = aws.String(strSplit[2])
+	for i, v := range d.EntityMap.Resource {
+		if i < 50 {
+			if v.Value != "" {
+				res.Details.Other[v.Name] = aws.String(formatOnLength(v.Value, 1024))
+			}
+		}
+	}
+	return res
+}
+
 func MapAwsApiTracker(d types.Data, res securityhub.Resource) securityhub.Resource {
 	res.Details = &securityhub.ResourceDetails{}
 	res.Details.Other = make(map[string]*string)
@@ -18,9 +38,11 @@ func MapAwsApiTracker(d types.Data, res securityhub.Resource) securityhub.Resour
 	res.Id = aws.String(d.EntityMap.CtUser[0].Username)
 	res.Partition = aws.String("aws")
 	res.Region = aws.String(d.EntityMap.Region[0].Region)
-	for _, o := range d.EntityMap.API {
-		if o.Service != "" || o.API != "" {
-			res.Details.Other[o.API] = aws.String(o.Service)
+	for i, o := range d.EntityMap.API {
+		if i < 50 {
+			if o.Service != "" || o.API != "" {
+				res.Details.Other[o.API] = aws.String(formatOnLength(o.Service, 1024))
+			}
 		}
 	}
 	return res
@@ -33,11 +55,32 @@ func MapCloudTrailCep(d types.Data, res securityhub.Resource) securityhub.Resour
 	res.Id = aws.String(d.EntityMap.CtUser[0].Username)
 	res.Partition = aws.String("aws")
 	res.Region = aws.String(d.EntityMap.Region[0].Region)
-	for _, o := range d.EntityMap.Resource {
-		res.Details.Other[o.Name] = aws.String(o.Value)
+	for i, o := range d.EntityMap.Resource {
+		if i < 50 {
+			res.Details.Other[o.Name] = aws.String(formatOnLength(o.Value, 1024))
+		}
 	}
-	for _, o := range d.EntityMap.RulesTriggered {
-		res.Details.Other[o.RuleID] = aws.String(o.RuleTitle)
+	for i, o := range d.EntityMap.RulesTriggered {
+		if i < 50 {
+			res.Details.Other[o.RuleID] = aws.String(formatOnLength(o.RuleTitle, 1024))
+		}
 	}
 	return res
+}
+
+func GetIncomingAccount(data string) string {
+	re := regexp.MustCompile("\\d{12}")
+	match := re.FindStringSubmatch(data)
+	return match[0]
+}
+
+func formatOnLength(input string, length int) string {
+	var output string
+	l := len(input)
+	if l < length {
+		output = input
+	} else {
+		output = input[:length]
+	}
+	return output
 }

@@ -36,6 +36,7 @@ func handler(ctx context.Context, e events.CloudWatchEvent) {
 		fmt.Println("error while creating aws session: ", err)
 	}
 	svc := securityhub.New(sess)
+	fmt.Printf("%s\n", batch.String())
 	output, err := svc.BatchImportFindings(&batch)
 	if err != nil {
 		fmt.Println("error while importing batch: ", err)

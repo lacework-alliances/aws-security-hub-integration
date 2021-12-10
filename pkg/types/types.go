@@ -89,6 +89,12 @@ type Machine struct {
 	InstanceID     string  `json:"INSTANCE_ID"`
 }
 
+type NewViolation struct {
+	RecID    string `json:"REC_ID"`
+	Reason   string `json:"REASON"`
+	Resource string `json:"RESOURCE"`
+}
+
 type EntityMap struct {
 	Cve             []Cve             `json:"Cve,omitempty"`
 	Customrule      []Customrule      `json:"CustomRule,omitempty"`
@@ -101,6 +107,7 @@ type EntityMap struct {
 	Machine         []Machine         `json:"Machine,omitempty"`
 	Resource        []Resource        `json:"Resource,omitempty"`
 	RulesTriggered  []Rule            `json:"RulesTriggered,omitempty"`
+	NewViolation    []NewViolation    `json:"NewViolation,omitempty"`
 }
 
 type Data struct {
