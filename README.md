@@ -30,3 +30,10 @@ aws lambda create-function --function-name lw-sechub-integration \
 --zip-file fileb://function.zip --handler main --runtime go1.x \
 --memory-size 128 --package-type Zip --role arn:aws:iam::494165660702:role/lw-security-hub-ex
 ```
+Create the EventBridge
+```
+aws events create-event-bus --name lw-sechub-integration
+aws events put-permission --event-bus-name lw-sechub-integration --action events:PutEvents --principal 434813966438 --statement-id all_account_to_put_events
+aws events put-rule --name lw-sechub-incoming --event-bus-name lw-sechub-integration --event-pattern '{"source":["434813966438", "<your account ids>"]}'
+aws events put-targets --rule lw-sechub-incoming --event-bus-name lw-sechub-integration --targets "Id"="1","Arn"="<lambda-arn::>"
+```
