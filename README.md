@@ -11,14 +11,15 @@ Lacework Cloudwatch alert channel, EventBridge and Lambda.
 
 
 ### Manual Setup
-####Build from source
+
+#### Build from source
 ```
 git clone https://github.com/lacework-dev/aws-security-hub-integration.git
 GOOS=linux CGO_ENABLED=0 go build -o main *.go
 zip function.zip main
 ```
 
-####Use AWS cli to configure the Lambda function
+#### Use AWS cli to configure the Lambda function
 Create Lambda Execution Role
 ```
 aws iam create-role --role-name lw-security-hub-ex --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
