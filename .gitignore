@@ -3,3 +3,6 @@
 function.zip
 test.json
 main
+/deploy/terraform/.terraform/
+deploy/terraform/.terraform.lock.hcl
+deploy/terraform/terraform.tfstate
