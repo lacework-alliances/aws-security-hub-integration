@@ -49,4 +49,29 @@ resource "aws_lambda_function" "lw-sechub-integration" {
   timeout           = 30
 }
 
+module "eventbridge" {
+  source = "terraform-aws-modules/eventbridge/aws"
+
+  bus_name = "lw-sechub-integration"
+
+  #event_pattern is an array of the root Lacework account "434813966438" and your AWS accounts.
+  rules = {
+    lw-sechub = {
+      description   = "Capture incoming Lacework events"
+      event_pattern = jsonencode({ "account" : ["434813966438"] })
+      enabled       = true
+    }
+  }
+
+  # targets is the lambda function we created above
+  targets = {
+    lw-sechub = [
+      {
+        name            = "lw-sechub-integration"
+        arn             = aws_lambda_function.lw-sechub-integration.arn
+      }
+    ]
+  }
+}
+
 
