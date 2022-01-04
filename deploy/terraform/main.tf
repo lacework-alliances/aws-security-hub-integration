@@ -1,8 +1,11 @@
 terraform {
   required_providers {
-    aws = {
+    aws      = {
       source  = "hashicorp/aws"
       version = "~> 3.70.0"
+    }
+    lacework = {
+      source = "lacework/lacework"
     }
   }
 }
@@ -10,6 +13,7 @@ terraform {
 locals {
   lambda_handler = "main"
   name = "lw-sechub-integration"
+  lw_account = "434813966438"
 }
 
 provider "aws" {
@@ -58,7 +62,7 @@ module "eventbridge" {
   rules = {
     lw-sechub = {
       description   = "Capture incoming Lacework events"
-      event_pattern = jsonencode({ "account" : ["434813966438"] })
+      event_pattern = jsonencode({ "account" : [local.lw_account] })
       enabled       = true
     }
   }
@@ -67,11 +71,33 @@ module "eventbridge" {
   targets = {
     lw-sechub = [
       {
-        name            = "lw-sechub-integration"
-        arn             = aws_lambda_function.lw-sechub-integration.arn
+        name = local.name
+        arn  = aws_lambda_function.lw-sechub-integration.arn
       }
     ]
   }
 }
 
+resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
+  principal    = local.lw_account
+  statement_id = "LaceworkAccess"
+  action = "events:PutEvents"
+  event_bus_name = local.name
 
+  depends_on = [
+    module.eventbridge
+  ]
+}
+
+resource "lacework_alert_channel_aws_cloudwatch" "all_events" {
+  name            = local.name
+  event_bus_arn   = module.eventbridge.eventbridge_bus_arn
+  group_issues_by = "Events"
+}
+
+resource "lacework_alert_rule" "all_events" {
+  name             = local.name
+  description      = "This is an example alert rule"
+  alert_channels   = [lacework_alert_channel_aws_cloudwatch.all_events.id]
+  severities       = ["Critical", "High", "Medium", "Low", "Info"]
+}
