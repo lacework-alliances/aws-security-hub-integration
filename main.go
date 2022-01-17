@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/securityhub"
-	"github.com/lacework-dev/aws-security-hub-integration/internal/findings"
-	"github.com/lacework-dev/aws-security-hub-integration/pkg/types"
+	"github.com/lacework-alliances/aws-security-hub-integration/internal/findings"
+	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 )
 
 func main() {

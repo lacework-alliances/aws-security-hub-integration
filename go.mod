@@ -1,4 +1,4 @@
-module github.com/lacework-dev/aws-security-hub-integration
+module github.com/lacework-alliances/aws-security-hub-integration
 
 go 1.16
 
