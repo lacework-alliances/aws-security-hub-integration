@@ -2,6 +2,7 @@
 .idea
 function.zip
 test.json
+.DS_Store
 main
 /deploy/terraform/.terraform/
 deploy/terraform/.terraform.lock.hcl

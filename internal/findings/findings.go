@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
-	"github.com/lacework-dev/aws-security-hub-integration/internal/resources"
-	"github.com/lacework-dev/aws-security-hub-integration/pkg/types"
+	"github.com/lacework-alliances/aws-security-hub-integration/internal/resources"
+	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 	"log"
 	"time"
 )

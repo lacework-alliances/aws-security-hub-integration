@@ -7,15 +7,16 @@ Lacework Cloudwatch alert channel, EventBridge and Lambda.
 
 ### Terraform
 
-### Cloudformation
+### CloudFormation
+For CloudFormation deployment which automatically creates the AWS roles, Lambda functions, EventBridge resources and the Lacework Alert channel and rules, see [https://github.com/lacework-alliances/aws-security-hub-integration](https://github.com/lacework-alliances/aws-security-hub-integration).
 
 
 ### Manual Setup
 
 #### Build from source
 ```
-git clone https://github.com/lacework-dev/aws-security-hub-integration.git
-GOOS=linux CGO_ENABLED=0 go build -o main *.go
+git clone https://github.com/lacework-alliances/aws-security-hub-integration.git
+GOOS=linux CGO_ENABLED=0 go build -o main main.go
 zip function.zip main
 ```
 
