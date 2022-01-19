@@ -13,7 +13,9 @@ terraform {
 locals {
   lambda_handler = "main"
   name = "lw-sechub-integration"
-  lw_accounts = [""]
+  lw_account = "434813966438"
+  #customer_accounts is the list of customer's AWS accounts that are configured in Lacework
+  customer_accounts = [""]
   lw_sechub_resource = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
 }
 
@@ -63,7 +65,7 @@ module "eventbridge" {
   rules = {
     lw-sechub = {
       description   = "Capture incoming Lacework events"
-      event_pattern = jsonencode({ "account" : local.lw_accounts })
+      event_pattern = jsonencode({ "account" : local.customer_accounts })
       enabled       = true
     }
   }
@@ -103,7 +105,7 @@ resource "aws_iam_role_policy_attachment" "policy-attach" {
 }
 
 resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
-  principal    = local.lw_accounts
+  principal    = local.lw_account
   statement_id = "LaceworkAccess"
   action = "events:PutEvents"
   event_bus_name = local.name
