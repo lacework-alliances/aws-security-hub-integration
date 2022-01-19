@@ -13,7 +13,8 @@ terraform {
 locals {
   lambda_handler = "main"
   name = "lw-sechub-integration"
-  lw_account = "434813966438"
+  lw_accounts = [""]
+  lw_sechub_resource = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
 }
 
 provider "aws" {
@@ -62,7 +63,7 @@ module "eventbridge" {
   rules = {
     lw-sechub = {
       description   = "Capture incoming Lacework events"
-      event_pattern = jsonencode({ "account" : [local.lw_account] })
+      event_pattern = jsonencode({ "account" : local.lw_accounts })
       enabled       = true
     }
   }
@@ -78,8 +79,31 @@ module "eventbridge" {
   }
 }
 
+resource "aws_iam_policy" "policy" {
+  name        = "lw-sechub-batchimport"
+  description = "allows Lacework Lambda to post events to Security Hub"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "securityhub:BatchImportFindings",
+        ]
+        Effect   = "Allow"
+        Resource = local.lw_sechub_resource
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "policy-attach" {
+  role = aws_iam_role.lw-sechub-integration.name
+  policy_arn = aws_iam_policy.policy.arn
+}
+
 resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
-  principal    = local.lw_account
+  principal    = local.lw_accounts
   statement_id = "LaceworkAccess"
   action = "events:PutEvents"
   event_bus_name = local.name
@@ -88,6 +112,8 @@ resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
     module.eventbridge
   ]
 }
+
+
 
 resource "lacework_alert_channel_aws_cloudwatch" "all_events" {
   name            = local.name
