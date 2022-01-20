@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/resources"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
-	"log"
 	"time"
 )
 
@@ -221,7 +220,6 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 		SourceUrl:     aws.String(le.Detail.Link),
 		Resources:     mapToResource(le.Detail.EventDetails.Data),
 	}
-	log.Printf("Account: %s | Category: %s\n", le.Detail.Account, le.Detail.EventCategory)
 	fs = append(fs, &finding)
 
 	return fs
