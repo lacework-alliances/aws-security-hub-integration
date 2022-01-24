@@ -14,6 +14,8 @@ locals {
   lambda_handler = "main"
   name = "lw-sechub-integration"
   lw_account = "434813966438"
+  #default_account is the main AWS account that unknown data sources will be mapped to in Security Hub
+  default_account = ""
   #customer_accounts is the list of customer's AWS accounts that are configured in Lacework
   customer_accounts = [""]
   lw_sechub_resource = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
@@ -23,7 +25,7 @@ provider "aws" {
   region     = "us-east-2"
 }
 
-resource "aws_iam_role" "lw-sechub-integration" {
+resource "aws_iam_role" "lw-sechub-role" {
   name = "lw-sechub-role"
 
   assume_role_policy = jsonencode({
@@ -40,21 +42,40 @@ resource "aws_iam_role" "lw-sechub-integration" {
   })
 }
 
+resource "aws_sqs_queue" "lw-sechub-queue" {
+  name          = "lw-sechub-queue"
+  delay_seconds = 0
+  message_retention_seconds = 86400
+}
+
 resource "aws_iam_role_policy_attachment" "basic-lambda" {
-  role = aws_iam_role.lw-sechub-integration.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role = aws_iam_role.lw-sechub-role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
 }
 
 resource "aws_lambda_function" "lw-sechub-integration" {
   filename          = "../../function.zip"
   function_name     = local.name
-  role              = aws_iam_role.lw-sechub-integration.arn
+  description       = "This lambda is used to receive SQS messages from Lacework and submit findings to Security Hub"
+  role              = aws_iam_role.lw-sechub-role.arn
   handler           = local.lambda_handler
   source_code_hash  = filebase64sha256("../../function.zip")
   runtime           = "go1.x"
   memory_size       = 256
   timeout           = 30
+
+  environment {
+    variables = {
+      DEFAULT_AWS_ACCOUNT = local.default_account
+    }
+  }
 }
+
+resource "aws_lambda_event_source_mapping" "lw-sechub" {
+  event_source_arn = aws_sqs_queue.lw-sechub-queue.arn
+  function_name    = aws_lambda_function.lw-sechub-integration.arn
+}
+
 
 module "eventbridge" {
   source = "terraform-aws-modules/eventbridge/aws"
@@ -70,12 +91,12 @@ module "eventbridge" {
     }
   }
 
-  # targets is the lambda function we created above
+  # targets is the SQS queue we created above
   targets = {
     lw-sechub = [
       {
-        name = local.name
-        arn  = aws_lambda_function.lw-sechub-integration.arn
+        name = aws_sqs_queue.lw-sechub-queue.name
+        arn  = aws_sqs_queue.lw-sechub-queue.arn
       }
     ]
   }
@@ -100,7 +121,7 @@ resource "aws_iam_policy" "policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "policy-attach" {
-  role = aws_iam_role.lw-sechub-integration.name
+  role = aws_iam_role.lw-sechub-role.name
   policy_arn = aws_iam_policy.policy.arn
 }
 
@@ -117,15 +138,15 @@ resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
 
 
 
-resource "lacework_alert_channel_aws_cloudwatch" "all_events" {
+resource "lacework_alert_channel_aws_cloudwatch" "all_events_sechub" {
   name            = local.name
   event_bus_arn   = module.eventbridge.eventbridge_bus_arn
   group_issues_by = "Events"
 }
 
-resource "lacework_alert_rule" "all_events" {
+resource "lacework_alert_rule" "all_severities" {
   name             = local.name
-  description      = "This is an example alert rule"
-  alert_channels   = [lacework_alert_channel_aws_cloudwatch.all_events.id]
+  description      = "All severities for Security Hub integration"
+  alert_channels   = [lacework_alert_channel_aws_cloudwatch.all_events_sechub.id]
   severities       = ["Critical", "High", "Medium", "Low", "Info"]
 }
