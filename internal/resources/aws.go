@@ -1,12 +1,16 @@
 package resources
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
+	"os"
 	"regexp"
 	"strings"
 )
+
+var defaultAccount = os.Getenv("DEFAULT_AWS_ACCOUNT")
 
 func MapDefault(d types.Data, res securityhub.Resource) securityhub.Resource {
 	res.Type = aws.String("Other")
@@ -69,8 +73,12 @@ func MapCloudTrailCep(d types.Data, res securityhub.Resource) securityhub.Resour
 }
 
 func GetIncomingAccount(data string) string {
+	fmt.Printf("GetIncomingAccount Data: %s\n", data)
 	re := regexp.MustCompile("\\d{12}")
 	match := re.FindStringSubmatch(data)
+	if len(match) == 0 || match[0] == "" {
+		return defaultAccount
+	}
 	return match[0]
 }
 
