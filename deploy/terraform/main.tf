@@ -11,6 +11,8 @@ terraform {
 }
 
 locals {
+  #Lacework instance name <lw_instance>.lacework.net
+  lw_instance = "customerdemo"
   lambda_handler = "main"
   name = "lw-sechub-integration"
   lw_account = "434813966438"
@@ -66,8 +68,13 @@ resource "aws_lambda_function" "lw-sechub-integration" {
 
   environment {
     variables = {
-      DEFAULT_AWS_ACCOUNT = local.default_account
+      DEFAULT_AWS_ACCOUNT = local.default_account,
+      LACEWORK_INSTANCE = local.lw_instance
     }
+  }
+
+  tags = {
+    lw_instance = local.lw_instance,
   }
 }
 

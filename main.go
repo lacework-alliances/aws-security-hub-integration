@@ -10,11 +10,30 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/findings"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
+	"os"
 )
 
+var defaultAccount string
+var instance string
+
+func init() {
+	defaultAccount = os.Getenv("DEFAULT_AWS_ACCOUNT")
+	if defaultAccount == "" {
+		fmt.Println("Please set the environment variable DEFAULT_AWS_ACCOUNT")
+	}
+	instance = os.Getenv("LACEWORK_INSTANCE")
+	if instance == "" {
+		fmt.Println("Please et the environment variable LACEWORK_INSTANCE")
+	}
+}
+
 func main() {
-	eventMap := findings.InitMap()
-	ctx := context.WithValue(context.Background(), "eventMap", eventMap)
+	cfg := types.Config{
+		DefaultAccount: defaultAccount,
+		Instance:       instance,
+		EventMap:       findings.InitMap(),
+	}
+	ctx := context.WithValue(context.Background(), "config", cfg)
 	lambda.StartWithContext(ctx, handler)
 }
 

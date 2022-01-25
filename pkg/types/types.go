@@ -2,6 +2,12 @@ package types
 
 import "time"
 
+type Config struct {
+	DefaultAccount string
+	Instance       string
+	EventMap       map[string]string
+}
+
 type LaceworkEvent struct {
 	Version    string    `json:"version"`
 	ID         string    `json:"id"`
