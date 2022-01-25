@@ -101,6 +101,42 @@ type NewViolation struct {
 	Resource string `json:"RESOURCE"`
 }
 
+type Violationreason struct {
+	Reason string `json:"REASON"`
+	RecID  string `json:"REC_ID"`
+}
+type Recid struct {
+	RecID        string `json:"REC_ID"`
+	EvalType     string `json:"EVAL_TYPE"`
+	EvalGUID     string `json:"EVAL_GUID"`
+	AccountID    string `json:"ACCOUNT_ID"`
+	AccountAlias string `json:"ACCOUNT_ALIAS"`
+	Title        string `json:"TITLE"`
+}
+
+type Process struct {
+	HOSTNAME         string    `json:"HOSTNAME"`
+	CMDLINE          string    `json:"CMDLINE"`
+	PROCESSSTARTTIME time.Time `json:"PROCESS_START_TIME"`
+	CPUPERCENTAGE    int       `json:"CPU_PERCENTAGE"`
+	PROCESSID        int       `json:"PROCESS_ID"`
+}
+
+type Application struct {
+	HASEXTERNALCONNS  int       `json:"HAS_EXTERNAL_CONNS"`
+	ISSERVER          int       `json:"IS_SERVER"`
+	APPLICATION       string    `json:"APPLICATION"`
+	EARLIESTKNOWNTIME time.Time `json:"EARLIEST_KNOWN_TIME"`
+	ISCLIENT          int       `json:"IS_CLIENT"`
+}
+
+type FileExePath struct {
+	EXEPATH          string    `json:"EXE_PATH"`
+	FIRSTSEENTIME    time.Time `json:"FIRST_SEEN_TIME"`
+	LASTFILEOWNER    string    `json:"LAST_FILE_OWNER"`
+	LASTFILEDATAHASH string    `json:"LAST_FILEDATA_HASH"`
+}
+
 type EntityMap struct {
 	Cve             []Cve             `json:"Cve,omitempty"`
 	Customrule      []Customrule      `json:"CustomRule,omitempty"`
@@ -114,6 +150,11 @@ type EntityMap struct {
 	Resource        []Resource        `json:"Resource,omitempty"`
 	RulesTriggered  []Rule            `json:"RulesTriggered,omitempty"`
 	NewViolation    []NewViolation    `json:"NewViolation,omitempty"`
+	Violationreason []Violationreason `json:"Violationreason,omitempty"`
+	Recid           []Recid           `json:"Recid,omitempty"`
+	Application     []Application     `json:"Application,omitempty"`
+	Process         []Process         `json:"Process,omitempty"`
+	FileExePath     []FileExePath     `json:"FileExePath,omitempty"`
 }
 
 type Data struct {

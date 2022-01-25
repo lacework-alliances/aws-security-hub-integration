@@ -33,6 +33,36 @@ const (
 
 func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.AwsSecurityFinding {
 	var fs []*securityhub.AwsSecurityFinding
+	var category string
+
+	// get the category to determine finding
+	category = le.Detail.EventCategory
+	switch category {
+	case "App":
+		app := new(App)
+		fs = app.Findings(ctx)
+	case "Compliance":
+		comp := new(Compliance)
+		fs = comp.Findings(ctx)
+	case "Aws":
+		finding := mapDefault(ctx, le)
+		fs = append(fs, &finding)
+	case "GcpAuditTrail":
+		finding := mapDefault(ctx, le)
+		fs = append(fs, &finding)
+	case "User":
+		finding := mapDefault(ctx, le)
+		fs = append(fs, &finding)
+	default:
+		fmt.Printf("Unknown category: %s\n", category)
+		finding := mapDefault(ctx, le)
+		fs = append(fs, &finding)
+	}
+
+	return fs
+}
+
+func mapDefault(ctx context.Context, le types.LaceworkEvent) securityhub.AwsSecurityFinding {
 	var desc string
 	cfg := ctx.Value("config").(types.Config)
 	if len(le.Detail.Summary) >= 255 {
@@ -55,9 +85,7 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 		SourceUrl:     aws.String(le.Detail.Link),
 		Resources:     mapToResource(le.Detail.EventDetails.Data),
 	}
-	fs = append(fs, &finding)
-
-	return fs
+	return finding
 }
 
 func mapToResource(data []types.Data) []*securityhub.Resource {
@@ -173,6 +201,27 @@ func MapCloudTrailCep(d types.Data, res securityhub.Resource) securityhub.Resour
 		}
 	}
 	return res
+}
+
+func getDescription(input string) string {
+	if len(input) >= 255 {
+		return input[:255]
+	} else {
+		return input
+	}
+}
+
+// getComplianceCloud returns the public cloud of the event (aws, gcp, azure) based on the event summary
+func getComplianceCloud(input string) string {
+	var cloud string
+	if strings.Contains(strings.ToLower(input), "aws") {
+		cloud = "aws"
+	} else if strings.Contains(strings.ToLower(input), "gcp") {
+		cloud = "gcp"
+	} else if strings.Contains(strings.ToLower(input), "azure") {
+		cloud = "azure"
+	}
+	return cloud
 }
 
 func formatOnLength(input string, length int) string {
