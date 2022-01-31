@@ -105,7 +105,17 @@ type Violationreason struct {
 	Reason string `json:"REASON"`
 	RecID  string `json:"REC_ID"`
 }
+
 type Recid struct {
+	RecID        string `json:"REC_ID"`
+	EvalType     string `json:"EVAL_TYPE"`
+	EvalGUID     string `json:"EVAL_GUID"`
+	AccountID    string `json:"ACCOUNT_ID"`
+	AccountAlias string `json:"ACCOUNT_ALIAS"`
+	Title        string `json:"TITLE"`
+}
+
+type RecidAzure struct {
 	RecID        string `json:"REC_ID"`
 	EvalType     string `json:"EVAL_TYPE"`
 	EvalGUID     string `json:"EVAL_GUID"`
@@ -118,7 +128,7 @@ type Process struct {
 	HOSTNAME         string    `json:"HOSTNAME"`
 	CMDLINE          string    `json:"CMDLINE"`
 	PROCESSSTARTTIME time.Time `json:"PROCESS_START_TIME"`
-	CPUPERCENTAGE    int       `json:"CPU_PERCENTAGE"`
+	CPUPERCENTAGE    float64   `json:"CPU_PERCENTAGE"`
 	PROCESSID        int       `json:"PROCESS_ID"`
 }
 
@@ -135,6 +145,27 @@ type FileExePath struct {
 	FIRSTSEENTIME    time.Time `json:"FIRST_SEEN_TIME"`
 	LASTFILEOWNER    string    `json:"LAST_FILE_OWNER"`
 	LASTFILEDATAHASH string    `json:"LAST_FILEDATA_HASH"`
+}
+
+type IpAddress struct {
+	COUNTRY       string  `json:"COUNTRY"`
+	IPADDRESS     string  `json:"IP_ADDRESS"`
+	TOTALOUTBYTES float64 `json:"TOTAL_OUT_BYTES"`
+	TOTALINBYTES  float64 `json:"TOTAL_IN_BYTES"`
+	REGION        string  `json:"REGION"`
+	PORTLIST      []int   `json:"PORT_LIST"`
+}
+
+type DnsName struct {
+	HOSTNAME      string  `json:"HOSTNAME"`
+	TOTALOUTBYTES float64 `json:"TOTAL_OUT_BYTES"`
+	TOTALINBYTES  float64 `json:"TOTAL_IN_BYTES"`
+	PORTLIST      []int   `json:"PORT_LIST"`
+}
+
+type User struct {
+	MACHINEHOSTNAME string `json:"MACHINE_HOSTNAME"`
+	USERNAME        string `json:"USERNAME"`
 }
 
 type EntityMap struct {
@@ -155,6 +186,10 @@ type EntityMap struct {
 	Application     []Application     `json:"Application,omitempty"`
 	Process         []Process         `json:"Process,omitempty"`
 	FileExePath     []FileExePath     `json:"FileExePath,omitempty"`
+	IpAddress       []IpAddress       `json:"IpAddress,omitempty"`
+	User            []User            `json:"User,omitempty"`
+	RecidAzure      []RecidAzure      `json:"RecId_Azure,omitempty"`
+	DnsName         []DnsName         `json:"DnsName,omitempty"`
 }
 
 type Data struct {

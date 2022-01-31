@@ -39,11 +39,13 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	category = le.Detail.EventCategory
 	switch category {
 	case "App":
-		app := new(App)
-		fs = app.Findings(ctx)
+		app := App{Event: le}
+		findings := app.Findings(ctx)
+		fs = append(fs, findings...)
 	case "Compliance":
-		comp := new(Compliance)
-		fs = comp.Findings(ctx)
+		comp := Compliance{Event: le}
+		findings := comp.Findings(ctx)
+		fs = append(fs, findings...)
 	case "Aws":
 		finding := mapDefault(ctx, le)
 		fs = append(fs, &finding)
@@ -233,4 +235,16 @@ func formatOnLength(input string, length int) string {
 		output = input[:length]
 	}
 	return output
+}
+
+func lastString(ss []string) string {
+	return ss[len(ss)-1]
+}
+
+func isActive(value int) string {
+	active := "false"
+	if value > 0 {
+		active = "true"
+	}
+	return active
 }

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
+	lam "github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/findings"
@@ -13,8 +13,10 @@ import (
 	"os"
 )
 
-var defaultAccount string
-var instance string
+var (
+	defaultAccount string
+	instance       string
+)
 
 func init() {
 	defaultAccount = os.Getenv("DEFAULT_AWS_ACCOUNT")
@@ -23,7 +25,7 @@ func init() {
 	}
 	instance = os.Getenv("LACEWORK_INSTANCE")
 	if instance == "" {
-		fmt.Println("Please et the environment variable LACEWORK_INSTANCE")
+		fmt.Println("Please set the environment variable LACEWORK_INSTANCE")
 	}
 }
 
@@ -34,7 +36,7 @@ func main() {
 		EventMap:       findings.InitMap(),
 	}
 	ctx := context.WithValue(context.Background(), "config", cfg)
-	lambda.StartWithContext(ctx, handler)
+	lam.StartWithContext(ctx, handler)
 }
 
 func handler(ctx context.Context, e events.SQSEvent) {
@@ -65,5 +67,4 @@ func handler(ctx context.Context, e events.SQSEvent) {
 	if *output.FailedCount > int64(0) {
 		fmt.Println(output.String())
 	}
-
 }

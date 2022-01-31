@@ -12,10 +12,10 @@ terraform {
 
 locals {
   #Lacework instance name <lw_instance>.lacework.net
-  lw_instance = "customerdemo"
+  lw_instance = ""
   lambda_handler = "main"
   name = "lw-sechub-integration"
-  lw_account = "434813966438"
+  lw_account = "434813966438" #DO NOT CHANGE
   #default_account is the main AWS account that unknown data sources will be mapped to in Security Hub
   default_account = ""
   #customer_accounts is the list of customer's AWS accounts that are configured in Lacework
@@ -68,13 +68,13 @@ resource "aws_lambda_function" "lw-sechub-integration" {
 
   environment {
     variables = {
-      DEFAULT_AWS_ACCOUNT = local.default_account,
+      DEFAULT_AWS_ACCOUNT = local.default_account
       LACEWORK_INSTANCE = local.lw_instance
     }
   }
 
   tags = {
-    lw_instance = local.lw_instance,
+    lw_instance = local.lw_instance
   }
 }
 
