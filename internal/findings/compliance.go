@@ -23,10 +23,18 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 	// loop through the Lacework event data
 	for _, e := range c.Event.Detail.EventDetails.Data {
 		var comp securityhub.Compliance
+		var reason string
 		// create the compliance
 		violation := e.EntityMap.Violationreason[0]
+
+		if len(violation.Reason) >= 64 {
+			reason = violation.Reason[:64]
+		} else {
+			reason = violation.Reason
+		}
 		comp = securityhub.Compliance{
-			RelatedRequirements: aws.StringSlice([]string{violation.Reason[:64]}),
+
+			RelatedRequirements: aws.StringSlice([]string{reason}),
 			Status:              aws.String(securityhub.ComplianceStatusFailed),
 		}
 		finding := securityhub.AwsSecurityFinding{
@@ -35,7 +43,7 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 			Compliance:    &comp,
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(c.Event.ID),
-			ProductArn:    aws.String(ARN),
+			ProductArn:    getProductArn(cfg.Region),
 			Types:         getTypes(cfg.EventMap, c.Event.Detail.EventType),
 			CreatedAt:     aws.String(c.Event.Time.Format(time.RFC3339)),
 			UpdatedAt:     aws.String(c.Event.Time.Format(time.RFC3339)),

@@ -6,6 +6,7 @@ type Config struct {
 	DefaultAccount string
 	Instance       string
 	EventMap       map[string]string
+	Region         string
 }
 
 type LaceworkEvent struct {
@@ -81,8 +82,11 @@ type Rule struct {
 	RuleSeverity    int    `json:"RULE_SEVERITY"`
 }
 
-type Sourceipaddress struct {
+type SourceIpAddress struct {
 	IPAddress string `json:"IP_ADDRESS"`
+	Country   string `json:"COUNTRY"`
+	City      string `json:"CITY"`
+	Region    string `json:"REGION"`
 }
 
 type Machine struct {
@@ -176,7 +180,7 @@ type EntityMap struct {
 	CtUser          []CtUser          `json:"CT_User,omitempty"`
 	Region          []Region          `json:"Region,omitempty"`
 	API             []API             `json:"API,omitempty"`
-	Sourceipaddress []Sourceipaddress `json:"SourceIpAddress,omitempty"`
+	SourceIpAddress []SourceIpAddress `json:"SourceIpAddress,omitempty"`
 	Machine         []Machine         `json:"Machine,omitempty"`
 	Resource        []Resource        `json:"Resource,omitempty"`
 	RulesTriggered  []Rule            `json:"RulesTriggered,omitempty"`

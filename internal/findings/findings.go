@@ -27,7 +27,8 @@ const (
 	SoftwareCVE           = "Software and Configuration Checks/Vulnerabilities/CVE"
 	SoftwarePolicy        = "Software and Configuration Checks/Policy"
 
-	ARN    = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
+	ArnFormat = "arn:aws:securityhub:%s::product/lacework/lacework"
+
 	SCHEMA = "2018-10-08"
 )
 
@@ -39,16 +40,20 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	category = le.Detail.EventCategory
 	switch category {
 	case "App":
+		fmt.Println("source is App")
 		app := App{Event: le}
 		findings := app.Findings(ctx)
 		fs = append(fs, findings...)
 	case "Compliance":
+		fmt.Println("source is Compliance")
 		comp := Compliance{Event: le}
 		findings := comp.Findings(ctx)
 		fs = append(fs, findings...)
 	case "Aws":
-		finding := mapDefault(ctx, le)
-		fs = append(fs, &finding)
+		fmt.Println("source is AWS")
+		a := Aws{Event: le}
+		findings := a.Findings(ctx)
+		fs = append(fs, findings...)
 	case "GcpAuditTrail":
 		finding := mapDefault(ctx, le)
 		fs = append(fs, &finding)
@@ -64,6 +69,11 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	return fs
 }
 
+func getProductArn(region string) *string {
+	arn := fmt.Sprintf(ArnFormat, region)
+	return aws.String(arn)
+}
+
 func mapDefault(ctx context.Context, le types.LaceworkEvent) securityhub.AwsSecurityFinding {
 	var desc string
 	cfg := ctx.Value("config").(types.Config)
@@ -77,7 +87,7 @@ func mapDefault(ctx context.Context, le types.LaceworkEvent) securityhub.AwsSecu
 		GeneratorId:   aws.String(le.Detail.EventCategory),
 		SchemaVersion: aws.String(SCHEMA),
 		Id:            aws.String(le.ID),
-		ProductArn:    aws.String(ARN),
+		ProductArn:    getProductArn(cfg.Region),
 		Types:         getTypes(cfg.EventMap, le.Detail.EventType),
 		CreatedAt:     aws.String(le.Time.Format(time.RFC3339)),
 		UpdatedAt:     aws.String(le.Time.Format(time.RFC3339)),
@@ -136,7 +146,6 @@ func getTypes(m map[string]string, t string) []*string {
 }
 
 func getAwsAccount(defaultAccount, data string) string {
-	fmt.Printf("getAwsAccount Data: %s\n", data)
 	re := regexp.MustCompile("\\d{12}")
 	match := re.FindStringSubmatch(data)
 	if len(match) == 0 || match[0] == "" {

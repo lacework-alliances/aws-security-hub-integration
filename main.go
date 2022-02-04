@@ -34,6 +34,7 @@ func main() {
 		DefaultAccount: defaultAccount,
 		Instance:       instance,
 		EventMap:       findings.InitMap(),
+		Region:         os.Getenv("AWS_REGION"),
 	}
 	ctx := context.WithValue(context.Background(), "config", cfg)
 	lam.StartWithContext(ctx, handler)

@@ -20,7 +20,6 @@ func (a App) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 	desc := getDescription(a.Event.Detail.Summary)
 	// grab the config struct from the context
 	cfg := ctx.Value("config").(types.Config)
-
 	for _, e := range a.Event.Detail.EventDetails.Data {
 		generatorID := a.getGenerator(a.Event.Detail.EventCategory, a.Event.Source, e.EventType, e.EventModel)
 		finding := securityhub.AwsSecurityFinding{
@@ -28,7 +27,7 @@ func (a App) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 			GeneratorId:   aws.String(generatorID),
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(a.Event.ID),
-			ProductArn:    aws.String(ARN),
+			ProductArn:    getProductArn(cfg.Region),
 			Types:         getTypes(cfg.EventMap, a.Event.Detail.EventType),
 			CreatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
 			UpdatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
@@ -188,6 +187,14 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		}
 		fileExeMap := a.fileExePath(data.EntityMap.FileExePath)
 		for k, v := range fileExeMap {
+			otherMap[k] = v
+		}
+	case "NewInternalConnection":
+		machineMap := a.machine(data.EntityMap.Machine)
+		for k, v := range machineMap {
+			if k == "MACHINE-HOSTNAME-0" {
+				id = v
+			}
 			otherMap[k] = v
 		}
 	default:
