@@ -44,12 +44,29 @@ func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 
 func (a Aws) resource(data types.Data) []*securityhub.Resource {
 	var resourceList []*securityhub.Resource
+	var res securityhub.Resource
 	// create the basic resource
-	res := securityhub.Resource{
-		Details: &securityhub.ResourceDetails{},
-		Type:    aws.String("Other"),
+	switch data.EventType {
+	case "NewUser":
+		res = securityhub.Resource{
+			ResourceRole: aws.String("Target"),
+			Type:         aws.String("AwsIamUser"),
+			Partition:    aws.String("aws"),
+			Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
+			Region:       aws.String(data.EntityMap.Region[0].Region),
+			Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
+				UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
+				UserName: aws.String(data.EntityMap.CtUser[0].Username),
+			}},
+		}
+	default:
+		res = securityhub.Resource{
+			Details: &securityhub.ResourceDetails{},
+			Type:    aws.String("Other"),
+		}
+		res.Id, res.Details.Other = a.otherDetails(data)
 	}
-	res.Id, res.Details.Other = a.otherDetails(data)
+
 	resourceList = append(resourceList, &res)
 	return resourceList
 }
@@ -84,6 +101,12 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
+	case "NewRegion":
+	case "NewUser":
+		id = aws.String(data.EntityMap.CtUser[0].Username)
+
+	case "IAMPolicyChanged":
+	case "LoginFromSourceUsingCalltype":
 	default:
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 	}

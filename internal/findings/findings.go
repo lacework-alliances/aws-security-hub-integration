@@ -35,7 +35,6 @@ const (
 func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.AwsSecurityFinding {
 	var fs []*securityhub.AwsSecurityFinding
 	var category string
-
 	// get the category to determine finding
 	category = le.Detail.EventCategory
 	switch category {
