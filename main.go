@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	lam "github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/findings"
@@ -62,25 +63,28 @@ func handler(ctx context.Context, e events.SQSEvent) {
 		}
 
 		f := findings.EventToASFF(ctx, event)
-		batch.Findings = append(batch.Findings, f...)
-	}
-
-	sess, err := session.NewSession()
-	if err != nil {
-		lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session")
-		fmt.Println("error while creating aws session: ", err)
-	}
-	svc := securityhub.New(sess)
-	fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
-	output, err := svc.BatchImportFindings(&batch)
-	if err != nil {
-		lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
-		fmt.Println("error while importing batch: ", err)
-	}
-	if *output.FailedCount > int64(0) {
-		fmt.Println(output.String())
-	} else {
-		eventData := fmt.Sprintf("sent %d events to Security Hub", len(e.Records))
-		lacework.SendHoneycombEvent(instance, "send_to_sechub", "", version, eventData, "handler")
+		if len(f) > 0 {
+			batch.Findings = append(batch.Findings, f...)
+			sess, err := session.NewSession(&aws.Config{
+				CredentialsChainVerboseErrors: aws.Bool(true),
+			})
+			if err != nil {
+				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session")
+				fmt.Println("error while creating aws session: ", err)
+			}
+			svc := securityhub.New(sess)
+			fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
+			output, err := svc.BatchImportFindings(&batch)
+			if err != nil {
+				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
+				fmt.Println("error while importing batch: ", err)
+			}
+			if *output.FailedCount > int64(0) {
+				fmt.Println(output.String())
+			} else {
+				eventData := fmt.Sprintf("sent %d events to Security Hub", len(e.Records))
+				lacework.SendHoneycombEvent(instance, "send_to_sechub", "", version, eventData, "handler")
+			}
+		}
 	}
 }

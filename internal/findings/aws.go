@@ -77,7 +77,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 
 	switch data.EventType {
-	case "UserUsedServiceInRegion":
+	case "UserUsedServiceInRegion", "ServiceAccessedInRegion":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {
@@ -87,26 +87,26 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range apiMap {
 			otherMap[k] = v
 		}
-	case "UnauthorizedAPICall":
+	case "UnauthorizedAPICall", "IAMPolicyChanged", "NetworkGatewayChange", "RouteTableChange":
 		rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
 		id = aws.String(rule)
 		ruleMap := a.rule(data.EntityMap.RulesTriggered)
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged":
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		id = aws.String(rule)
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
-	case "NewRegion":
 	case "NewUser":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
-
-	case "IAMPolicyChanged":
-	case "LoginFromSourceUsingCalltype":
+	case "VPCChange":
+		id = aws.String(data.EntityMap.CtUser[0].Username)
+	case "IAMAccessKeyChanged":
+		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 	default:
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 	}

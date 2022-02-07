@@ -26,6 +26,7 @@ const (
 	SoftwareVulnerability = "Software and Configuration Checks/Vulnerabilities"
 	SoftwareCVE           = "Software and Configuration Checks/Vulnerabilities/CVE"
 	SoftwarePolicy        = "Software and Configuration Checks/Policy"
+	AWSCompliance         = "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
 
 	ArnFormat = "arn:aws:securityhub:%s::product/lacework/lacework"
 
@@ -59,6 +60,8 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	case "User":
 		finding := mapDefault(ctx, le)
 		fs = append(fs, &finding)
+	case "TestEvent":
+		return fs
 	default:
 		fmt.Printf("Unknown category: %s\n", category)
 		finding := mapDefault(ctx, le)
@@ -156,23 +159,6 @@ func getAwsAccount(defaultAccount, data string) string {
 func MapDefault(d types.Data, res securityhub.Resource) securityhub.Resource {
 	res.Type = aws.String("Other")
 	res.Id = aws.String(d.EventActor)
-	return res
-}
-
-func MapAwsCompliance(d types.Data, res securityhub.Resource) securityhub.Resource {
-	res.Details = &securityhub.ResourceDetails{}
-	res.Type = aws.String("Other")
-	res.Id = aws.String(d.EntityMap.NewViolation[0].Resource)
-	res.Partition = aws.String("aws")
-	strSplit := strings.Split(d.EntityMap.NewViolation[0].Resource, ":")
-	res.Region = aws.String(strSplit[2])
-	for i, v := range d.EntityMap.Resource {
-		if i < 50 {
-			if v.Value != "" {
-				res.Details.Other[v.Name] = aws.String(formatOnLength(v.Value, 1024))
-			}
-		}
-	}
 	return res
 }
 
