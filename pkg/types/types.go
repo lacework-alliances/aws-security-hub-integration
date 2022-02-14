@@ -8,6 +8,7 @@ type Config struct {
 	EventMap       map[string]string
 	Region         string
 	Telemetry      bool
+	Version        string
 }
 
 type LaceworkEvent struct {

@@ -2,16 +2,19 @@ package findings
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
+	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 	"strings"
 	"time"
 )
 
 type Compliance struct {
-	Event types.LaceworkEvent
+	Event  types.LaceworkEvent
+	config types.Config
 }
 
 func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
@@ -19,7 +22,7 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 	// format the finding description
 	desc := getDescription(c.Event.Detail.Summary)
 	// grab the config struct from the context
-	cfg := ctx.Value("config").(types.Config)
+	c.config = ctx.Value("config").(types.Config)
 	// determine what cloud provider
 	cloud := getComplianceCloud(c.Event.Detail.Summary)
 	// loop through the Lacework event data
@@ -40,7 +43,6 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 				RelatedRequirements: aws.StringSlice([]string{reason}),
 				Status:              aws.String(securityhub.ComplianceStatusFailed),
 			}
-
 		default:
 			// create the compliance
 			violation := e.EntityMap.Violationreason[0]
@@ -55,14 +57,14 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 				Status:              aws.String(securityhub.ComplianceStatusFailed),
 			}
 		}
-
 		finding := securityhub.AwsSecurityFinding{
-			AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, c.Event.Detail.Summary)),
+			//AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, c.Event.Detail.Summary)),
+			AwsAccountId:  aws.String(c.config.DefaultAccount),
 			GeneratorId:   aws.String(cloud),
 			Compliance:    &comp,
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(c.Event.ID),
-			ProductArn:    getProductArn(cfg.Region),
+			ProductArn:    getProductArn(c.config.Region),
 			Types:         c.getTypes(),
 			CreatedAt:     aws.String(c.Event.Time.Format(time.RFC3339)),
 			UpdatedAt:     aws.String(c.Event.Time.Format(time.RFC3339)),
@@ -97,6 +99,13 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsEc2NetworkAcl")
 					} else if strings.Contains(strings.ToLower(v.Reason), "iam") {
 						res.Type = aws.String("AwsIamUser")
+					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
+						res.Type = aws.String("AwsEc2Instance")
+					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") {
+						res.Type = aws.String("AwsEc2Vpc")
+					} else {
+						t, _ := json.Marshal(data)
+						lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
 					}
 					details := c.mapRecID()
 					res.Details = &securityhub.ResourceDetails{

@@ -45,6 +45,7 @@ func main() {
 		EventMap:       findings.InitMap(),
 		Region:         os.Getenv("AWS_REGION"),
 		Telemetry:      telemetry,
+		Version:        version,
 	}
 	ctx := context.WithValue(context.Background(), "config", cfg)
 	lam.StartWithContext(ctx, handler)
@@ -73,13 +74,14 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				fmt.Println("error while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
-			fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
+			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
 				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
 				fmt.Println("error while importing batch: ", err)
 			}
 			if *output.FailedCount > int64(0) {
+				fmt.Printf("Failed Account: %s - Failed Region: %s\n", event.Account, event.Region)
 				fmt.Println(output.String())
 			} else {
 				eventData := fmt.Sprintf("sent %d events to Security Hub", len(e.Records))
