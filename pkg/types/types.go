@@ -7,6 +7,8 @@ type Config struct {
 	Instance       string
 	EventMap       map[string]string
 	Region         string
+	Telemetry      bool
+	Version        string
 }
 
 type LaceworkEvent struct {
@@ -222,4 +224,18 @@ type Detail struct {
 	Severity      int          `json:"SEVERITY"`
 	Account       string       `json:"ACCOUNT"`
 	Source        string       `json:"SOURCE"`
+}
+
+// Honeyvent defines what a Honeycomb event looks like for the AWS Security Hub Integration
+type Honeyvent struct {
+	Version         string `json:"version"`
+	Account         string `json:"account,omitempty"`
+	SubAccount      string `json:"sub-account,omitempty"`
+	Service         string `json:"service,omitempty"`
+	InstallMethod   string `json:"install-method,omitempty"`
+	TechPartner     string `json:"tech-partner,omitempty"`
+	IntegrationName string `json:"integration-name,omitempty"`
+	Function        string `json:"function,omitempty"`
+	Event           string `json:"event,omitempty"`
+	EventData       string `json:"event-data,omitempty"`
 }

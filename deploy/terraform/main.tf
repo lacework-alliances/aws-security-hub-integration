@@ -13,22 +13,27 @@ terraform {
 locals {
   #Lacework instance name <lw_instance>.lacework.net
   lw_instance = ""
-  lambda_handler = "main"
+  aws_region = "us-west-2"
   name = "lw-sechub-integration"
   lw_account = "434813966438" #DO NOT CHANGE
+  role = "lw-sechub-role"
   #default_account is the main AWS account that unknown data sources will be mapped to in Security Hub
   default_account = ""
-  #customer_accounts is the list of customer's AWS accounts that are configured in Lacework
-  customer_accounts = [""]
-  lw_sechub_resource = "arn:aws:securityhub:us-east-2:950194951070:product/950194951070/default"
+  #customer_accounts is the list of customer's AWS accounts that are configured in Lacework,
+  customer_accounts = [local.default_account]
+  lw_sechub_resource = format("arn:aws:securityhub:%s::product/lacework/lacework", local.aws_region)
 }
 
 provider "aws" {
-  region     = "us-east-2"
+  region     = local.aws_region
+}
+
+provider "lacework" {
+  profile = "default"
 }
 
 resource "aws_iam_role" "lw-sechub-role" {
-  name = "lw-sechub-role"
+  name = local.role
 
   assume_role_policy = jsonencode({
     "Version": "2012-10-17",
@@ -60,7 +65,7 @@ resource "aws_lambda_function" "lw-sechub-integration" {
   function_name     = local.name
   description       = "This lambda is used to receive SQS messages from Lacework and submit findings to Security Hub"
   role              = aws_iam_role.lw-sechub-role.arn
-  handler           = local.lambda_handler
+  handler           = "main"
   source_code_hash  = filebase64sha256("../../function.zip")
   runtime           = "go1.x"
   memory_size       = 256
@@ -76,6 +81,10 @@ resource "aws_lambda_function" "lw-sechub-integration" {
   tags = {
     lw_instance = local.lw_instance
   }
+
+  depends_on = [
+    aws_sqs_queue.lw-sechub-queue
+  ]
 }
 
 resource "aws_lambda_event_source_mapping" "lw-sechub" {
@@ -128,7 +137,10 @@ resource "aws_iam_policy" "policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "policy-attach" {
-  role = aws_iam_role.lw-sechub-role.name
+  role = [
+    local.role,
+    local.name
+  ]
   policy_arn = aws_iam_policy.policy.arn
 }
 
@@ -148,12 +160,17 @@ resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
 resource "lacework_alert_channel_aws_cloudwatch" "all_events_sechub" {
   name            = local.name
   event_bus_arn   = module.eventbridge.eventbridge_bus_arn
-  group_issues_by = "Events"
+  group_issues_by = "Resources"
+  enabled         = true
 }
 
 resource "lacework_alert_rule" "all_severities" {
   name             = local.name
-  description      = "All severities for Security Hub integration"
+  description      = "Alert rule for Security Hub integration"
   alert_channels   = [lacework_alert_channel_aws_cloudwatch.all_events_sechub.id]
+  #resource_groups requires the GUID of the Resource Group
+  #use the lacework cli command 'lacework resource-group list' to get the listing of GUIDs
+  #best starting point is the 'All Aws Accounts' resource group
+  #resource_groups  = [""]
   severities       = ["Critical", "High", "Medium", "Low", "Info"]
 }

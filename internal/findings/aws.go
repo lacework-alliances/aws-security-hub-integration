@@ -2,16 +2,19 @@ package findings
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
+	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 	"strconv"
 	"time"
 )
 
 type Aws struct {
-	Event types.LaceworkEvent
+	Event  types.LaceworkEvent
+	config types.Config
 }
 
 func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
@@ -19,16 +22,17 @@ func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 	// format the finding description
 	desc := getDescription(a.Event.Detail.Summary)
 	// grab the config struct from the context
-	cfg := ctx.Value("config").(types.Config)
+	a.config = ctx.Value("config").(types.Config)
 	for _, e := range a.Event.Detail.EventDetails.Data {
 		generatorID := a.Event.Detail.EventCategory
 		finding := securityhub.AwsSecurityFinding{
-			AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, a.Event.Detail.Summary)),
+			//AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, a.Event.Detail.Summary)),
+			AwsAccountId:  aws.String(a.config.DefaultAccount),
 			GeneratorId:   aws.String(generatorID),
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(a.Event.ID),
-			ProductArn:    getProductArn(cfg.Region),
-			Types:         getTypes(cfg.EventMap, a.Event.Detail.EventType),
+			ProductArn:    getProductArn(a.config.Region),
+			Types:         getTypes(a.config.EventMap, a.Event.Detail.EventType),
 			CreatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
 			UpdatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
 			Severity:      getSeverity(a.Event.Detail.Severity),
@@ -44,12 +48,29 @@ func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 
 func (a Aws) resource(data types.Data) []*securityhub.Resource {
 	var resourceList []*securityhub.Resource
+	var res securityhub.Resource
 	// create the basic resource
-	res := securityhub.Resource{
-		Details: &securityhub.ResourceDetails{},
-		Type:    aws.String("Other"),
+	switch data.EventType {
+	case "NewUser":
+		res = securityhub.Resource{
+			ResourceRole: aws.String("Target"),
+			Type:         aws.String("AwsIamUser"),
+			Partition:    aws.String("aws"),
+			Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
+			Region:       aws.String(data.EntityMap.Region[0].Region),
+			Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
+				UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
+				UserName: aws.String(data.EntityMap.CtUser[0].Username),
+			}},
+		}
+	default:
+		res = securityhub.Resource{
+			Details: &securityhub.ResourceDetails{},
+			Type:    aws.String("Other"),
+		}
+		res.Id, res.Details.Other = a.otherDetails(data)
 	}
-	res.Id, res.Details.Other = a.otherDetails(data)
+
 	resourceList = append(resourceList, &res)
 	return resourceList
 }
@@ -60,7 +81,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 
 	switch data.EventType {
-	case "UserUsedServiceInRegion":
+	case "UserUsedServiceInRegion", "ServiceAccessedInRegion":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {
@@ -70,22 +91,30 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range apiMap {
 			otherMap[k] = v
 		}
-	case "UnauthorizedAPICall":
+	case "UnauthorizedAPICall", "IAMPolicyChanged", "NetworkGatewayChange", "RouteTableChange", "SecurityGroupChange":
 		rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
 		id = aws.String(rule)
 		ruleMap := a.rule(data.EntityMap.RulesTriggered)
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged":
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		id = aws.String(rule)
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
+	case "NewUser":
+		id = aws.String(data.EntityMap.CtUser[0].Username)
+	case "VPCChange":
+		id = aws.String(data.EntityMap.CtUser[0].Username)
+	case "IAMAccessKeyChanged":
+		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 	default:
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
+		t, _ := json.Marshal(data)
+		lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
 	}
 	return id, otherMap
 }

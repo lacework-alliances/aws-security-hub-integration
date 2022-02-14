@@ -4,46 +4,57 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 	"net/http"
 )
 
-type PostHoneycombRequest struct {
-	Account         string `json:"account"`
-	SubAccount      string `json:"sub-account"`
-	TechPartner     string `json:"tech-partner"`
-	IntegrationName string `json:"integration-name"`
-	Version         string `json:"version"`
-	Service         string `json:"service"`
-	InstallMethod   string `json:"install-method"`
-	Function        string `json:"function"`
-	Event           string `json:"event"`
-	EventData       string `json:"event-data"`
-}
+var (
+	// HoneyApiKey is a variable that is injected at build time via
+	// the cross-platform directive inside the Makefile, this key is
+	// used to send events to Honeycomb so that we can understand how
+	// our customers use the Lacework CLI
+	HoneyApiKey = "unknown"
 
-func SendHoneycombEvent(account string, event string, subAccountName string, build string, eventData string) {
+	// HoneyDataset is the dataset in Honeycomb that we send tracing
+	// data this variable will be set depending on the environment we
+	// are running on. During development, we send all events and
+	// tracing data to a default dataset.
+	HoneyDataset = "lacework-alliances-dev"
+)
+
+const (
+	techPartner     = "AWS"
+	integrationName = "lacework-aws-security-hub"
+	service         = "AWS Security Hub"
+	installMethod   = "terraform"
+)
+
+func SendHoneycombEvent(account, event, subAccountName, version, eventData, f string) {
 	if eventData == "" {
 		eventData = "{}"
 	}
-	requestPayload := PostHoneycombRequest{
+
+	requestPayload := types.Honeyvent{
 		Account:         account,
 		SubAccount:      subAccountName,
-		TechPartner:     "AWS",
-		IntegrationName: "lacework-aws-security-hub-terraform",
-		Version:         build,
-		Service:         "AWS Security Hub",
-		InstallMethod:   "terraform",
-		Function:        "setup",
+		TechPartner:     techPartner,
+		IntegrationName: integrationName,
+		Version:         version,
+		Service:         service,
+		InstallMethod:   installMethod,
+		Function:        f,
 		Event:           event,
 		EventData:       eventData,
 	}
 	if payloadBytes, err := json.Marshal(requestPayload); err == nil {
-		if request, err := http.NewRequest(http.MethodPost, "https://api.honeycomb.io/1/events/$DATASET", bytes.NewBuffer(payloadBytes)); err == nil {
-			request.Header.Add("X-Honeycomb-Team", "$HONEY_KEY")
+		url := fmt.Sprintf("https://api.honeycomb.io/1/events/%s", HoneyDataset)
+		if request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payloadBytes)); err == nil {
+			request.Header.Add("X-Honeycomb-Team", HoneyApiKey)
 			request.Header.Add("content-type", "application/json")
 			if resp, err := http.DefaultClient.Do(request); err == nil {
-				fmt.Printf("Set event to Honeycomb: %s %d", event, resp.StatusCode)
+				fmt.Printf("Sent event to Honeycomb: %s %d\n", event, resp.StatusCode)
 			} else {
-				fmt.Printf("Unable to send event to Honeycomb: %s", err)
+				fmt.Printf("Unable to send event to Honeycomb: %s\n", err)
 			}
 		}
 	}
