@@ -32,8 +32,9 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
 
 ### 1. Deploy the Lacework AWS Security Hub Integration with Terraform
 
-1. Download the [Terraform](https://lacework-alliances.s3.us-west-2.amazonaws.com/lacework-aws-security-hub/terraform/main.tf)
-2. Determine your Lacework instance authentication method (lacework-cli or API key)  
+1. Download and extract the [Terraform Deployment Package](https://lacework-alliances.s3.us-west-2.amazonaws.com/lacework-aws-security-hub/terraform/lacework_security_hub.zip)
+2. Change directory to **lacework_security_hub/deploy/terraform**
+3. Determine your Lacework instance authentication method (lacework-cli or API key)  
    **lacework-cli**
    1. Chose the proper profile from the ~/.lacework.toml file, in this case the [default] profile
    ```toml
@@ -43,7 +44,8 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
    api_secret = "_b33ec45d56756tghy46def2321"
    version = 2
    ```
-   2. Modify the Lacework Terraform provider configuration with the above profile
+   2. Open the *main.tf* file
+   3. Modify the Lacework Terraform provider configuration with the above profile
    ```terraform
    provider "lacework" {
      profile = "default"
@@ -62,7 +64,7 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
      api_secret = "_b33ec45d56756tghy46def2321"
    }
    ```
-3. Modify the required local variables 
+4. Modify the required local variables 
    ```terraform
     # Lacework instance: example.lacework.net
      lw_instance = "example"
@@ -73,7 +75,7 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
      # customer_accounts is the array of customer's AWS accounts that are configured in Lacework,
      customer_accounts = [local.default_account, "2345678901", "3456789012"]
    ```
-4. Run *terraform init* -> *terraform plan* -> *terraform apply*
+5. Run *terraform init* -> *terraform plan* -> *terraform apply*
 
 ### 2. Deploy the Lacework AWS Security Hub Integration with CloudFormation
 
@@ -110,27 +112,7 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
 3. Click **Next** through to your stack **Review**.
 4. Accept the AWS CloudFormation terms and click **Create stack**.
 
-### 3. Manually Deploy the Lacework AWS Security Hub Integration with AWS CLI
-Create Lambda Execution Role
-```
-aws iam create-role --role-name lw-security-hub-ex --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
-aws iam attach-role-policy --role-name lw-security-hub-ex --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-```
-Create the Lambda Function
-```
-aws lambda create-function --function-name lw-sechub-integration \
---zip-file fileb://function.zip --handler main --runtime go1.x \
---memory-size 128 --package-type Zip --role arn:aws:iam::494165660702:role/lw-security-hub-ex
-```
-Create the EventBridge
-```
-aws events create-event-bus --name lw-sechub-integration
-aws events put-permission --event-bus-name lw-sechub-integration --action events:PutEvents --principal 434813966438 --statement-id all_account_to_put_events
-aws events put-rule --name lw-sechub-incoming --event-bus-name lw-sechub-integration --event-pattern '{"source":["434813966438", "<your account ids>"]}'
-aws events put-targets --rule lw-sechub-incoming --event-bus-name lw-sechub-integration --targets "Id"="1","Arn"="<lambda-arn::>"
-```
-
-### 4. Validate the Lacework AWS Security Hub Integration
+### 3. Validate the Lacework AWS Security Hub Integration
 
 1. Login to your Lacework Cloud Security Platform console.
 2. Go to **Settings > Alert Channels**.
