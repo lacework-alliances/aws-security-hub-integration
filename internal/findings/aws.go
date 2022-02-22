@@ -111,7 +111,11 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 	case "IAMAccessKeyChanged":
 		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+	case "NewRegion":
+		id = aws.String(data.EntityMap.Region[0].Region)
 	default:
+		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
+		id = aws.String(d)
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
 		lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
