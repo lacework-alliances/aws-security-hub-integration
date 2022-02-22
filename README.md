@@ -14,7 +14,7 @@ Lambda.
 
 ![Security Hub Integration Flow](docs/images/aws-security-hub.png)
 
-### Event to Finding Flow
+### Lacework Event to Security Hub Finding
 
 1. PDP sends an event to AWS Eventbridge via the Cloudwatch Alert Channel.
 2. Eventbridge forwards the event to an SQS queue.
@@ -30,18 +30,52 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
 
 ## Installing the Lacework AWS Security Hub Integration
 
-### 1. Generate a Lacework API Access Key
+### 1. Deploy the Lacework AWS Security Hub Integration with Terraform
 
-1. In your console, go to **Settings > API Keys**.
-2. Click on the **Create New** button in the upper right to create a new API key.
-3. Provide a **name** and **description** and click Save.
-4. Click the download button to download the API keys file.
-5. Copy the **keyId** and **secret** from this file.
+1. Download the [Terraform](https://lacework-alliances.s3.us-west-2.amazonaws.com/lacework-aws-security-hub/terraform/main.tf)
+2. Determine your Lacework instance authentication method (lacework-cli or API key)  
+   **lacework-cli**
+   1. Chose the proper profile from the ~/.lacework.toml file, in this case the [default] profile
+   ```toml
+   [default]
+   account = "example"
+   api_key = "EXAMPLE_2222D32AE4750727928E7C84055AAD67C96D8EEED25E3A1"
+   api_secret = "_b33ec45d56756tghy46def2321"
+   version = 2
+   ```
+   2. Modify the Lacework Terraform provider configuration with the above profile
+   ```terraform
+   provider "lacework" {
+     profile = "default"
+   }
+   ```  
+   **API key**
+   1. In your Lacework console, go to **Settings > API Keys**.
+   2. Click on the **Create New** button in the upper right to create a new API key.
+   3. Provide a **name** and **description** and click Save.
+   4. Click the download button to download the API keys file.
+   5. Copy the **keyId** and **secret** from this file.
+   ```terraform
+   provider "lacework" {
+     account = local.lw_instance
+     api_key = "EXAMPLE_2222D32AE4750727928E7C84055AAD67C96D8EEED25E3A1"
+     api_secret = "_b33ec45d56756tghy46def2321"
+   }
+   ```
+3. Modify the required local variables 
+   ```terraform
+    # Lacework instance: example.lacework.net
+     lw_instance = "example"
+     # aws_region sets the region for integration deployment (should be the same as your Security Hub instance)
+     aws_region = "us-west-2"
+     # default_account is the main AWS account id that unknown data sources will be mapped to in Security Hub
+     default_account = "1234567890"
+     # customer_accounts is the array of customer's AWS accounts that are configured in Lacework,
+     customer_accounts = [local.default_account, "2345678901", "3456789012"]
+   ```
+4. Run *terraform init* -> *terraform plan* -> *terraform apply*
 
-### 2. Deploy the Lacework AWS Security Hub Integration with Terraform
-
-
-### 3. Deploy the Lacework AWS Security Hub Integration with CloudFormation
+### 2. Deploy the Lacework AWS Security Hub Integration with CloudFormation
 
 1. Click on the following Launch Stack button to go to your CloudFormation console and launch the AWS Control Integration template.
 
@@ -76,7 +110,7 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
 3. Click **Next** through to your stack **Review**.
 4. Accept the AWS CloudFormation terms and click **Create stack**.
 
-### 4. Manually Deploy the Lacework AWS Security Hub Integration with AWS CLI
+### 3. Manually Deploy the Lacework AWS Security Hub Integration with AWS CLI
 Create Lambda Execution Role
 ```
 aws iam create-role --role-name lw-security-hub-ex --assume-role-policy-document '{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
@@ -96,7 +130,7 @@ aws events put-rule --name lw-sechub-incoming --event-bus-name lw-sechub-integra
 aws events put-targets --rule lw-sechub-incoming --event-bus-name lw-sechub-integration --targets "Id"="1","Arn"="<lambda-arn::>"
 ```
 
-### 5. Validate the Lacework AWS Security Hub Integration
+### 4. Validate the Lacework AWS Security Hub Integration
 
 1. Login to your Lacework Cloud Security Platform console.
 2. Go to **Settings > Alert Channels**.
@@ -105,7 +139,6 @@ aws events put-targets --rule lw-sechub-incoming --event-bus-name lw-sechub-inte
 
 ## Remove the Lacework AWS Security Hub Integration
 
-To remove the Lacework AWS Control Tower Integration, simply delete the main stack. All CloudFormation stacksets, stack instances, and Lambda functions will be deleted. **Note:** Lacework will no longer monitor your AWS cloud environment.
 
 ## Troubleshooting
 The following sections provide guidance for resolving issues with deploying the Lacework AWS Security Hub integration.

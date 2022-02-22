@@ -81,7 +81,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 
 	switch data.EventType {
-	case "UserUsedServiceInRegion", "ServiceAccessedInRegion":
+	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {
@@ -111,7 +111,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 	case "IAMAccessKeyChanged":
 		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
-	case "NewRegion":
+	case "NewRegion", "NewVPC":
 		id = aws.String(data.EntityMap.Region[0].Region)
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)

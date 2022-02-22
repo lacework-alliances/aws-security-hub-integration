@@ -11,17 +11,14 @@ terraform {
 }
 
 locals {
-  #Lacework instance name <lw_instance>.lacework.net
+  # <lw_instance>.lacework.net
   lw_instance = ""
-  aws_region = "us-west-2"
-  name = "lw-sechub-integration"
-  lw_account = "434813966438" #DO NOT CHANGE
-  role = "lw-sechub-role"
-  #default_account is the main AWS account that unknown data sources will be mapped to in Security Hub
+  # aws_region sets the region for integration deployment (should be the same as your Security Hub instance)
+  aws_region = ""
+  # default_account is the main AWS account id that unknown data sources will be mapped to in Security Hub
   default_account = ""
-  #customer_accounts is the list of customer's AWS accounts that are configured in Lacework,
-  customer_accounts = [local.default_account]
-  lw_sechub_resource = format("arn:aws:securityhub:%s::product/lacework/lacework", local.aws_region)
+  # customer_accounts is the array of customer's AWS accounts that are configured in Lacework,
+  customer_accounts = [local.default_account, ""]
 }
 
 provider "aws" {
@@ -30,10 +27,13 @@ provider "aws" {
 
 provider "lacework" {
   profile = "default"
+  # account = local.lw_instance
+  # api_key = ""
+  # api_secret = ""
 }
 
 resource "aws_iam_role" "lw-sechub-role" {
-  name = local.role
+  name = "lw-sechub-role"
 
   assume_role_policy = jsonencode({
     "Version": "2012-10-17",
@@ -62,7 +62,7 @@ resource "aws_iam_role_policy_attachment" "basic-lambda" {
 
 resource "aws_lambda_function" "lw-sechub-integration" {
   filename          = "../../function.zip"
-  function_name     = local.name
+  function_name     = "lw-sechub-integration"
   description       = "This lambda is used to receive SQS messages from Lacework and submit findings to Security Hub"
   role              = aws_iam_role.lw-sechub-role.arn
   handler           = "main"
@@ -130,7 +130,7 @@ resource "aws_iam_policy" "policy" {
           "securityhub:BatchImportFindings",
         ]
         Effect   = "Allow"
-        Resource = local.lw_sechub_resource
+        Resource = format("arn:aws:securityhub:%s::product/lacework/lacework", local.aws_region)
       },
     ]
   })
@@ -138,17 +138,17 @@ resource "aws_iam_policy" "policy" {
 
 resource "aws_iam_role_policy_attachment" "policy-attach" {
   role = [
-    local.role,
-    local.name
+    "lw-sechub-role",
+    "lw-sechub-integration"
   ]
   policy_arn = aws_iam_policy.policy.arn
 }
 
 resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
-  principal    = local.lw_account
+  principal    = "434813966438"
   statement_id = "LaceworkAccess"
   action = "events:PutEvents"
-  event_bus_name = local.name
+  event_bus_name = "lw-sechub-integration"
 
   depends_on = [
     module.eventbridge
@@ -158,14 +158,14 @@ resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
 
 
 resource "lacework_alert_channel_aws_cloudwatch" "all_events_sechub" {
-  name            = local.name
+  name            = "lw-sechub-integration"
   event_bus_arn   = module.eventbridge.eventbridge_bus_arn
   group_issues_by = "Resources"
   enabled         = true
 }
 
 resource "lacework_alert_rule" "all_severities" {
-  name             = local.name
+  name             = "lw-sechub-integration"
   description      = "Alert rule for Security Hub integration"
   alert_channels   = [lacework_alert_channel_aws_cloudwatch.all_events_sechub.id]
   #resource_groups requires the GUID of the Resource Group
@@ -173,4 +173,9 @@ resource "lacework_alert_rule" "all_severities" {
   #best starting point is the 'All Aws Accounts' resource group
   #resource_groups  = [""]
   severities       = ["Critical", "High", "Medium", "Low", "Info"]
+}
+
+output "eventbridge_bus_arn" {
+  description = "The EventBridge Bus ARN"
+  value       = module.eventbridge.eventbridge_bus_arn
 }
