@@ -61,6 +61,7 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 			//AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, c.Event.Detail.Summary)),
 			AwsAccountId:  aws.String(c.config.DefaultAccount),
 			GeneratorId:   aws.String(cloud),
+			Region:        aws.String(c.Event.Region),
 			Compliance:    &comp,
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(c.Event.ID),

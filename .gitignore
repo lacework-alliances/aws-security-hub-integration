@@ -8,4 +8,4 @@ main
 deploy/terraform/.terraform.lock.hcl
 deploy/terraform/terraform.tfstate
 deploy/terraform/terraform.tfstate.backup
-integration
+lacework_security_hub.zip

@@ -83,10 +83,11 @@ func handler(ctx context.Context, e events.SQSEvent) {
 			if *output.FailedCount > int64(0) {
 				fmt.Printf("Failed Account: %s - Failed Region: %s\n", event.Account, event.Region)
 				fmt.Println(output.String())
-			} else {
+			}
+			/* else {
 				eventData := fmt.Sprintf("sent %d events to Security Hub", len(e.Records))
 				lacework.SendHoneycombEvent(instance, "send_to_sechub", "", version, eventData, "handler")
-			}
+			} */
 		}
 	}
 }

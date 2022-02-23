@@ -81,7 +81,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 
 	switch data.EventType {
-	case "UserUsedServiceInRegion", "ServiceAccessedInRegion":
+	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {
@@ -98,20 +98,22 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype":
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype", "ApiFailedWithError":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		id = aws.String(rule)
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
-	case "NewUser":
-		id = aws.String(data.EntityMap.CtUser[0].Username)
-	case "VPCChange":
+	case "NewUser", "VPCChange":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 	case "IAMAccessKeyChanged":
 		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+	case "NewRegion", "NewVPC":
+		id = aws.String(data.EntityMap.Region[0].Region)
 	default:
+		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
+		id = aws.String(d)
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
 		lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
