@@ -98,16 +98,14 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype":
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype", "ApiFailedWithError":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		id = aws.String(rule)
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
-	case "NewUser":
-		id = aws.String(data.EntityMap.CtUser[0].Username)
-	case "VPCChange":
+	case "NewUser", "VPCChange":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 	case "IAMAccessKeyChanged":
 		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
