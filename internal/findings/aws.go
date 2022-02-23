@@ -116,7 +116,9 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		id = aws.String(d)
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
-		lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
+		if a.config.Telemetry {
+			lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
+		}
 	}
 	return id, otherMap
 }

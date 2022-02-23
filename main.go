@@ -31,7 +31,7 @@ func init() {
 	if instance == "" {
 		fmt.Println("Please set the environment variable LACEWORK_INSTANCE")
 	}
-	if disabled := os.Getenv("LW_TELEMETRY_DISABLE"); disabled != "" {
+	if disabled := os.Getenv("LW_DISABLE_TELEMETRY"); disabled != "" {
 		telemetry = false
 	} else {
 		telemetry = true
@@ -59,7 +59,9 @@ func handler(ctx context.Context, e events.SQSEvent) {
 
 		err := json.Unmarshal([]byte(message.Body), &event)
 		if err != nil {
-			lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "record")
+			if telemetry {
+				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "record")
+			}
 			fmt.Printf("error while unmarshaling event message: %v\n", err)
 		}
 
@@ -70,24 +72,24 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				CredentialsChainVerboseErrors: aws.Bool(true),
 			})
 			if err != nil {
-				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session")
+				if telemetry {
+					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session")
+				}
 				fmt.Println("error while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
 			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
-				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
+				if telemetry {
+					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
+				}
 				fmt.Println("error while importing batch: ", err)
 			}
 			if *output.FailedCount > int64(0) {
 				fmt.Printf("Failed Account: %s - Failed Region: %s\n", event.Account, event.Region)
 				fmt.Println(output.String())
 			}
-			/* else {
-				eventData := fmt.Sprintf("sent %d events to Security Hub", len(e.Records))
-				lacework.SendHoneycombEvent(instance, "send_to_sechub", "", version, eventData, "handler")
-			} */
 		}
 	}
 }

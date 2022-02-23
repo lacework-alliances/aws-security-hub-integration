@@ -106,7 +106,9 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsEc2Vpc")
 					} else {
 						t, _ := json.Marshal(data)
-						lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
+						if c.config.Telemetry {
+							lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
+						}
 					}
 					details := c.mapRecID()
 					res.Details = &securityhub.ResourceDetails{
