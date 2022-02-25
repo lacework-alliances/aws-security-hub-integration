@@ -111,6 +111,12 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 	case "NewRegion", "NewVPC":
 		id = aws.String(data.EntityMap.Region[0].Region)
+	case "NewS3Bucket", "S3BucketDeleted":
+		for _, resource := range data.EntityMap.Resource {
+			if resource.Name == "bucketName" {
+				id = aws.String(resource.Value)
+			}
+		}
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
 		id = aws.String(d)

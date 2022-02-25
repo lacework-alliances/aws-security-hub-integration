@@ -13,7 +13,7 @@ var (
 	// the cross-platform directive inside the Makefile, this key is
 	// used to send events to Honeycomb so that we can understand how
 	// our customers use the Lacework CLI
-	HoneyApiKey = "unknown"
+	HoneyApiKey = ""
 
 	// HoneyDataset is the dataset in Honeycomb that we send tracing
 	// data this variable will be set depending on the environment we

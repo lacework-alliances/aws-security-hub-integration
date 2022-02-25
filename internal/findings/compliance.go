@@ -98,12 +98,14 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsS3Bucket")
 					} else if strings.Contains(v.Reason, "ACL") {
 						res.Type = aws.String("AwsEc2NetworkAcl")
-					} else if strings.Contains(strings.ToLower(v.Reason), "iam") {
+					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") {
 						res.Type = aws.String("AwsIamUser")
 					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
 						res.Type = aws.String("AwsEc2Instance")
 					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") {
 						res.Type = aws.String("AwsEc2Vpc")
+					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") { // KMS
+						res.Type = aws.String("AwsKmsKey")
 					} else {
 						t, _ := json.Marshal(data)
 						if c.config.Telemetry {
