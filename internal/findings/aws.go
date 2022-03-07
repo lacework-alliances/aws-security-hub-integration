@@ -98,7 +98,9 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "LoginFromSourceUsingCalltype", "ApiFailedWithError":
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged",
+		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
+		"NewGrantAddedToCustomerMasterKey":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		id = aws.String(rule)
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
@@ -114,6 +116,12 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	case "NewS3Bucket", "S3BucketDeleted":
 		for _, resource := range data.EntityMap.Resource {
 			if resource.Name == "bucketName" {
+				id = aws.String(resource.Value)
+			}
+		}
+	case "CloudTrailChanged", "CloudTrailDeleted":
+		for _, resource := range data.EntityMap.Resource {
+			if resource.Name == "name" {
 				id = aws.String(resource.Value)
 			}
 		}

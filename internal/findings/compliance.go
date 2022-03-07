@@ -98,7 +98,8 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsS3Bucket")
 					} else if strings.Contains(v.Reason, "ACL") {
 						res.Type = aws.String("AwsEc2NetworkAcl")
-					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") {
+					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") ||
+						strings.Contains(v.Reason, "AWS_CIS_1_16") {
 						res.Type = aws.String("AwsIamUser")
 					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
 						res.Type = aws.String("AwsEc2Instance")
@@ -106,7 +107,10 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsEc2Vpc")
 					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") { // KMS
 						res.Type = aws.String("AwsKmsKey")
+					} else if strings.Contains(v.Reason, "AWS_CIS_2_7") {
+						res.Type = aws.String("AwsCloudTrailTrail")
 					} else {
+						res.Type = aws.String("Other")
 						t, _ := json.Marshal(data)
 						if c.config.Telemetry {
 							lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")

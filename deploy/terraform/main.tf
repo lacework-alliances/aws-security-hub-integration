@@ -90,6 +90,10 @@ resource "aws_lambda_function" "lw-sechub-integration" {
 resource "aws_lambda_event_source_mapping" "lw-sechub" {
   event_source_arn = aws_sqs_queue.lw-sechub-queue.arn
   function_name    = aws_lambda_function.lw-sechub-integration.arn
+
+  depends_on = [
+    aws_sqs_queue.lw-sechub-queue
+  ]
 }
 
 
@@ -136,12 +140,14 @@ resource "aws_iam_policy" "policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "policy-attach" {
-  role = [
-    "lw-sechub-role",
-    "lw-sechub-integration"
-  ]
+resource "aws_iam_role_policy_attachment" "role-policy-attach" {
+  role = "lw-sechub-role"
   policy_arn = aws_iam_policy.policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "integration-policy-attach" {
+  role = "lw-sechub-integration"
+  policy_arn       = aws_iam_policy.policy.arn
 }
 
 resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
@@ -154,14 +160,15 @@ resource "aws_cloudwatch_event_permission" "LaceworkAccess" {
     module.eventbridge
   ]
 }
-
-
-
 resource "lacework_alert_channel_aws_cloudwatch" "all_events_sechub" {
   name            = "lw-sechub-integration"
   event_bus_arn   = module.eventbridge.eventbridge_bus_arn
   group_issues_by = "Resources"
   enabled         = true
+
+  depends_on = [
+    aws_cloudwatch_event_permission.LaceworkAccess
+  ]
 }
 
 resource "lacework_alert_rule" "all_severities" {
@@ -173,6 +180,10 @@ resource "lacework_alert_rule" "all_severities" {
   #best starting point is the 'All Aws Accounts' resource group
   #resource_groups  = [""]
   severities       = ["Critical", "High", "Medium", "Low", "Info"]
+
+  depends_on = [
+    lacework_alert_channel_aws_cloudwatch.all_events_sechub
+  ]
 }
 
 output "eventbridge_bus_arn" {
