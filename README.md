@@ -79,21 +79,24 @@ You need the following prerequisites to implement the Lacework AWS Security Hub 
 
 ### 2. Deploy the Lacework AWS Security Hub Integration with CloudFormation
 
-1. Click on the following Launch Stack button to go to your CloudFormation console and launch the AWS Control Integration template.
+1. Login in to AWS master account with Administrator permissions.
+   Click on the following Launch Stack button to go to your CloudFormation console and launch the AWS Control Integration template.
 
-   [![Launch](https://user-images.githubusercontent.com/6440106/153987820-e1f32423-1e69-416d-8bca-2ee3a1e85df1.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?templateURL=https://lacework-alliances.s3.us-west-2.amazonaws.com/lacework-control-tower-cfn/templates/control-tower-integration.template.yml)
+   [![Launch Stack](https://user-images.githubusercontent.com/6440106/150169828-1692c426-ce7a-4ee9-ae6e-0a0b2d9a99e8.png)](https://console.aws.amazon.com/cloudformation/home?#/stacks/create/review?templateURL=https://lacework-alliances.s3.us-west-2.amazonaws.com/lacework-aws-security-hub/templates/aws-security-hub-integration.yml)
 
    For most deployments, you only need the Basic Configuration parameters. Use the Advanced Configuration for customization.
-   ![cloudformation-basic-configuration.png](https://docs.lacework.com/assets/images/cloudformation-basic-configuration-33cb25c21212c3aae060d8f6d064bed8.png)
-
-2. Specify the following Basic Configuration parameters:
-    * Enter a **Stack name** for the stack.
-    * Enter **Your Lacework URL**.
-    * Enter your **Lacework Sub-Account Name** if you are using Lacework Organizations.
-    * Enter your **Lacework Access Key ID** and **Secret Key** that you copied from your previous API Keys file.
-
-3. Click **Next** through to your stack **Review**.
-4. Accept the AWS CloudFormation terms and click **Create stack**.
+   ![CloudFormation Stack Form](https://user-images.githubusercontent.com/6440106/149715371-62f7f918-ac94-4c6e-8c9d-a8049eda6f9b.png)
+3. Specify the following Basic Configuration parameters:
+   * Enter a **Stack name** for the stack.
+   * Enter **Your Lacework URL**.
+   * Enter your **Lacework Sub-Account Name** if you are using Lacework Organizations.
+   * Enter your **Lacework Access Key ID** and **Secret Key** that you copied from your previous API Keys file.
+   * Enter a **Resource Prefix Name** for the AWS resources that will be created.
+   * For **Customer Accounts**, enter a comma-separated list of AWS Accounts IDs that are monitored by Lacework.
+   * Choose whether you want to **Create Lacework Alert Channel**. This will create the Lacework alert channel and rule.
+   * Enter the **Alert Channel Name**.
+4. Click **Next** through to your stack **Review**.
+5. Accept the AWS CloudFormation terms and click **Create stack**.
 
 ### 3. Validate the Lacework AWS Security Hub Integration
 
