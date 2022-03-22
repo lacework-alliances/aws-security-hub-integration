@@ -94,21 +94,29 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 					// get the type
 					if strings.Contains(v.Reason, "SecurityGroup") || strings.Contains(strings.ToLower(v.Resource), "security-group") {
 						res.Type = aws.String("AwsEc2SecurityGroup")
-					} else if strings.Contains(v.Reason, "S3") {
+					} else if strings.Contains(v.Reason, "S3") || strings.Contains(v.Reason, "LoggingNotEnabled") {
 						res.Type = aws.String("AwsS3Bucket")
 					} else if strings.Contains(v.Reason, "ACL") {
 						res.Type = aws.String("AwsEc2NetworkAcl")
 					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") ||
-						strings.Contains(v.Reason, "AWS_CIS_1_16") {
+						strings.Contains(v.Reason, "AWS_CIS_1_16") || strings.Contains(v.Reason, "MFANotActive") {
 						res.Type = aws.String("AwsIamUser")
 					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
 						res.Type = aws.String("AwsEc2Instance")
-					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") {
+					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") || strings.Contains(v.Reason, "VPC") {
 						res.Type = aws.String("AwsEc2Vpc")
 					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") { // KMS
 						res.Type = aws.String("AwsKmsKey")
 					} else if strings.Contains(v.Reason, "AWS_CIS_2_7") {
 						res.Type = aws.String("AwsCloudTrailTrail")
+					} else if strings.Contains(v.Reason, "Ec2Instance") {
+						res.Type = aws.String("AwsEc2Instance")
+					} else if strings.Contains(v.Reason, "LogFileValidation") {
+						res.Type = aws.String("AwsCloudTrailTrail")
+					} else if strings.Contains(v.Reason, "RDSDatabase") {
+						res.Type = aws.String("AwsRdsDbInstance")
+					} else if strings.Contains(v.Reason, "ElasticSearch") {
+						res.Type = aws.String("AwsElasticSearchDomain")
 					} else {
 						res.Type = aws.String("Other")
 						t, _ := json.Marshal(data)

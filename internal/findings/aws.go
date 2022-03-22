@@ -81,7 +81,8 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 
 	switch data.EventType {
-	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion":
+	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion",
+		"UsageOfRootAccount":
 		id = aws.String(data.EntityMap.CtUser[0].Username)
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {

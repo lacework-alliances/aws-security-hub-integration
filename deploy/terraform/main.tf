@@ -14,15 +14,16 @@ locals {
   # <lw_instance>.lacework.net
   lw_instance = ""
   # aws_region sets the region for integration deployment (should be the same as your Security Hub instance)
-  aws_region = ""
+  aws_region = "us-west-2"
   # default_account is the main AWS account id that unknown data sources will be mapped to in Security Hub
   default_account = ""
   # customer_accounts is the array of customer's AWS accounts that are configured in Lacework,
-  customer_accounts = [local.default_account, ""]
+  customer_accounts = [local.default_account]
 }
 
 provider "aws" {
   region     = local.aws_region
+  # profile    = ""
 }
 
 provider "lacework" {
@@ -90,10 +91,6 @@ resource "aws_lambda_function" "lw-sechub-integration" {
 resource "aws_lambda_event_source_mapping" "lw-sechub" {
   event_source_arn = aws_sqs_queue.lw-sechub-queue.arn
   function_name    = aws_lambda_function.lw-sechub-integration.arn
-
-  depends_on = [
-    aws_sqs_queue.lw-sechub-queue
-  ]
 }
 
 
