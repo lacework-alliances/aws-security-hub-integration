@@ -79,22 +79,50 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 	otherMap := make(map[string]*string)
 	var id *string
 	switch data.EventType {
-	case "NewExternalClientBadIp", "NewExternalClientConn":
+	case "NewExternalClientBadIp", "NewExternalClientConn", "NewExternalServerIp", "NewChildLaunched":
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
 			id = aws.String(image)
 		} else {
 			id = aws.String(data.EntityMap.Machine[0].Hostname)
 		}
-		containerMap := a.container(data.EntityMap.Container)
-		for k, v := range containerMap {
-			otherMap[k] = v
+		if len(data.EntityMap.Container) > 0 {
+			containerMap := a.container(data.EntityMap.Container)
+			for k, v := range containerMap {
+				otherMap[k] = v
+			}
 		}
-		machineMap := a.machine(data.EntityMap.Machine)
-		for k, v := range machineMap {
-			otherMap[k] = v
+		if len(data.EntityMap.Machine) > 0 {
+			machineMap := a.machine(data.EntityMap.Machine)
+			for k, v := range machineMap {
+				otherMap[k] = v
+			}
 		}
-	case "KnownHostCveDiscovered":
+		if len(data.EntityMap.Application) > 0 {
+			appMap := a.application(data.EntityMap.Application)
+			for k, v := range appMap {
+				otherMap[k] = v
+			}
+		}
+		if len(data.EntityMap.Process) > 0 {
+			procMap := a.process(data.EntityMap.Process)
+			for k, v := range procMap {
+				otherMap[k] = v
+			}
+		}
+		if len(data.EntityMap.FileExePath) > 0 {
+			fileMap := a.fileExePath(data.EntityMap.FileExePath)
+			for k, v := range fileMap {
+				otherMap[k] = v
+			}
+		}
+		if len(data.EntityMap.User) > 0 {
+			userMap := a.user(data.EntityMap.User)
+			for k, v := range userMap {
+				otherMap[k] = v
+			}
+		}
+	case "KnownHostCveDiscovered", "ExistingHostCveSeverityEscalated":
 		var s string
 		for _, cve := range data.EntityMap.Cve {
 			s = s + " " + cve.CveID

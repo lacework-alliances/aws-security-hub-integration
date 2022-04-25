@@ -99,7 +99,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged",
+	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "S3BucketACLChanged",
 		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
 		"NewGrantAddedToCustomerMasterKey":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
