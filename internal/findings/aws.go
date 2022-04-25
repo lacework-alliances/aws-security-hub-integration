@@ -179,9 +179,6 @@ func (a Aws) ipAddress(ips []types.SourceIpAddress) map[string]*string {
 		if p.IPAddress != "" {
 			other["IP_ADDRESS-"+strconv.Itoa(i)] = aws.String(p.IPAddress)
 		}
-		if p.City != "" {
-			other["IP-CITY-"+strconv.Itoa(i)] = aws.String(p.City)
-		}
 		if p.Country != "" {
 			other["IP-COUNTRY-"+strconv.Itoa(i)] = aws.String(p.Country)
 		}

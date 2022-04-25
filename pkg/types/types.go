@@ -30,7 +30,7 @@ type Cve struct {
 	Severity    int    `json:"SEVERITY"`
 }
 
-type Customrule struct {
+type CustomRule struct {
 	LastUpdatedTime time.Time `json:"LAST_UPDATED_TIME"`
 	LastUpdatedUser string    `json:"LAST_UPDATED_USER"`
 	DisplayFilter   string    `json:"DISPLAY_FILTER"`
@@ -46,7 +46,7 @@ type Imageid struct {
 	ImageActive     int      `json:"IMAGE_ACTIVE"`
 }
 
-type Imagefeature struct {
+type ImageFeature struct {
 	Cve              []string `json:"CVE"`
 	FeatureName      string   `json:"FEATURE_NAME"`
 	FeatureNamespace string   `json:"FEATURE_NAMESPACE"`
@@ -85,10 +85,20 @@ type Rule struct {
 }
 
 type SourceIpAddress struct {
-	IPAddress string `json:"IP_ADDRESS"`
-	Country   string `json:"COUNTRY"`
-	City      string `json:"CITY"`
-	Region    string `json:"REGION"`
+	ThreatTags    string         `json:"THREAT_TAGS,omitempty"`
+	Country       string         `json:"COUNTRY"`
+	IPAddress     string         `json:"IP_ADDRESS"`
+	TotalOutBytes int            `json:"TOTAL_OUT_BYTES"`
+	TotalInBytes  int            `json:"TOTAL_IN_BYTES"`
+	Region        string         `json:"REGION"`
+	PortList      []int          `json:"PORT_LIST"`
+	ThreatSource  []ThreatSource `json:"THREAT_SOURCE,omitempty"`
+}
+
+type ThreatSource struct {
+	Date             string `json:"DATE"`
+	PrimaryThreatTag string `json:"PRIMARY_THREAT_TAG"`
+	Source           string `json:"SOURCE"`
 }
 
 type Machine struct {
@@ -154,12 +164,14 @@ type FileExePath struct {
 }
 
 type IpAddress struct {
-	COUNTRY       string  `json:"COUNTRY"`
-	IPADDRESS     string  `json:"IP_ADDRESS"`
-	TOTALOUTBYTES float64 `json:"TOTAL_OUT_BYTES"`
-	TOTALINBYTES  float64 `json:"TOTAL_IN_BYTES"`
-	REGION        string  `json:"REGION"`
-	PORTLIST      []int   `json:"PORT_LIST"`
+	ThreatTags    string         `json:"THREAT_TAGS,omitempty"`
+	Country       string         `json:"COUNTRY"`
+	IPAddress     string         `json:"IP_ADDRESS"`
+	TotalOutBytes int            `json:"TOTAL_OUT_BYTES"`
+	TotalInBytes  int            `json:"TOTAL_IN_BYTES"`
+	Region        string         `json:"REGION"`
+	PortList      []int          `json:"PORT_LIST"`
+	ThreatSource  []ThreatSource `json:"THREAT_SOURCE,omitempty"`
 }
 
 type DnsName struct {
@@ -174,11 +186,21 @@ type User struct {
 	USERNAME        string `json:"USERNAME"`
 }
 
+type Container struct {
+	HASEXTERNALCONNS int    `json:"HAS_EXTERNAL_CONNS"`
+	IMAGETAG         string `json:"IMAGE_TAG"`
+	ISSERVER         int    `json:"IS_SERVER"`
+	CLUSTERNAME      string `json:"CLUSTER_NAME"`
+	FIRSTSEENTIME    string `json:"FIRST_SEEN_TIME"`
+	IMAGEREPO        string `json:"IMAGE_REPO"`
+	ISCLIENT         int    `json:"IS_CLIENT"`
+}
+
 type EntityMap struct {
 	Cve             []Cve             `json:"Cve,omitempty"`
-	Customrule      []Customrule      `json:"CustomRule,omitempty"`
+	CustomRule      []CustomRule      `json:"CustomRule,omitempty"`
 	Imageid         []Imageid         `json:"ImageId,omitempty"`
-	Imagefeature    []Imagefeature    `json:"ImageFeature,omitempty"`
+	ImageFeature    []ImageFeature    `json:"ImageFeature,omitempty"`
 	CtUser          []CtUser          `json:"CT_User,omitempty"`
 	Region          []Region          `json:"Region,omitempty"`
 	API             []API             `json:"API,omitempty"`
@@ -196,6 +218,7 @@ type EntityMap struct {
 	User            []User            `json:"User,omitempty"`
 	RecidAzure      []RecidAzure      `json:"RecId_Azure,omitempty"`
 	DnsName         []DnsName         `json:"DnsName,omitempty"`
+	Container       []Container       `json:"Container,omitempty"`
 }
 
 type Data struct {

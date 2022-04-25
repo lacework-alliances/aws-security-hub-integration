@@ -2,16 +2,19 @@ package findings
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
+	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
 	"strconv"
 	"time"
 )
 
 type App struct {
-	Event types.LaceworkEvent
+	Event  types.LaceworkEvent
+	config types.Config
 }
 
 func (a App) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
@@ -19,16 +22,17 @@ func (a App) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 	// format the finding description
 	desc := getDescription(a.Event.Detail.Summary)
 	// grab the config struct from the context
-	cfg := ctx.Value("config").(types.Config)
+	a.config = ctx.Value("config").(types.Config)
 	for _, e := range a.Event.Detail.EventDetails.Data {
-		generatorID := a.getGenerator(a.Event.Detail.EventCategory, a.Event.Source, e.EventType, e.EventModel)
+		generatorID := a.Event.Detail.EventCategory
 		finding := securityhub.AwsSecurityFinding{
-			AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, a.Event.Detail.Summary)),
+			//AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, a.Event.Detail.Summary)),
+			AwsAccountId:  aws.String(a.config.DefaultAccount),
 			GeneratorId:   aws.String(generatorID),
 			SchemaVersion: aws.String(SCHEMA),
 			Id:            aws.String(a.Event.ID),
-			ProductArn:    getProductArn(cfg.Region),
-			Types:         getTypes(cfg.EventMap, a.Event.Detail.EventType),
+			ProductArn:    getProductArn(a.config.Region),
+			Types:         getTypes(a.config.EventMap, a.Event.Detail.EventType),
 			CreatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
 			UpdatedAt:     aws.String(a.Event.Time.Format(time.RFC3339)),
 			Severity:      getSeverity(a.Event.Detail.Severity),
@@ -44,12 +48,29 @@ func (a App) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 
 func (a App) resource(data types.Data) []*securityhub.Resource {
 	var resourceList []*securityhub.Resource
+	var res securityhub.Resource
 	// create the basic resource
-	res := securityhub.Resource{
-		Details: &securityhub.ResourceDetails{},
-		Type:    aws.String("Other"),
+	switch data.EventType {
+	case "":
+		res = securityhub.Resource{
+			ResourceRole: aws.String("Target"),
+			Type:         aws.String("AwsIamUser"),
+			Partition:    aws.String("aws"),
+			Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
+			Region:       aws.String(data.EntityMap.Region[0].Region),
+			Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
+				UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
+				UserName: aws.String(data.EntityMap.CtUser[0].Username),
+			}},
+		}
+	default:
+		res = securityhub.Resource{
+			Details: &securityhub.ResourceDetails{},
+			Type:    aws.String("Other"),
+		}
+		res.Id, res.Details.Other = a.otherDetails(data)
 	}
-	res.Id, res.Details.Other = a.otherDetails(data)
+
 	resourceList = append(resourceList, &res)
 	return resourceList
 }
@@ -57,148 +78,52 @@ func (a App) resource(data types.Data) []*securityhub.Resource {
 func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 	otherMap := make(map[string]*string)
 	var id *string
-	// Check the EVENT_TYPE and make decisions
 	switch data.EventType {
-	case "NewChildLaunched":
-		// Machine Key
-		machineMap := a.machine(data.EntityMap.Machine)
-
-		for k, v := range machineMap {
-			if k == "MACHINE-HOSTNAME-0" {
-				id = v
-			}
-			otherMap[k] = v
+	case "NewExternalClientBadIp", "NewExternalClientConn":
+		if len(data.EntityMap.Container) > 0 {
+			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
+			id = aws.String(image)
+		} else {
+			id = aws.String(data.EntityMap.Machine[0].Hostname)
 		}
-		// Process Key
-		processMap := a.process(data.EntityMap.Process)
-		for k, v := range processMap {
-			otherMap[k] = v
-		}
-		// Application
-		applicationMap := a.application(data.EntityMap.Application)
-		for k, v := range applicationMap {
-			otherMap[k] = v
-		}
-		// FileExePath
-		fileExeMap := a.fileExePath(data.EntityMap.FileExePath)
-		for k, v := range fileExeMap {
-			otherMap[k] = v
-		}
-	case "NewExternalServerIp":
-		// User, IpAddress, Process, Application, FileExePath, Machine
-		userMap := a.user(data.EntityMap.User)
-		for k, v := range userMap {
-			otherMap[k] = v
-		}
-		ipMap := a.ipAddress(data.EntityMap.IpAddress)
-		for k, v := range ipMap {
+		containerMap := a.container(data.EntityMap.Container)
+		for k, v := range containerMap {
 			otherMap[k] = v
 		}
 		machineMap := a.machine(data.EntityMap.Machine)
 		for k, v := range machineMap {
 			otherMap[k] = v
 		}
-		processMap := a.process(data.EntityMap.Process)
-		for k, v := range processMap {
-			otherMap[k] = v
+	case "KnownHostCveDiscovered":
+		var s string
+		for _, cve := range data.EntityMap.Cve {
+			s = s + " " + cve.CveID
 		}
-		applicationMap := a.application(data.EntityMap.Application)
-		for k, v := range applicationMap {
-			if k == "APPLICATION-0" {
-				id = v
-			}
-			otherMap[k] = v
-		}
-		fileExeMap := a.fileExePath(data.EntityMap.FileExePath)
-		for k, v := range fileExeMap {
-			otherMap[k] = v
-		}
-	case "NewBinaryType":
-		// User, Process, Application, FileExePath, Machine
-		userMap := a.user(data.EntityMap.User)
-		for k, v := range userMap {
-			otherMap[k] = v
-		}
-		machineMap := a.machine(data.EntityMap.Machine)
-		for k, v := range machineMap {
-			if k == "MACHINE-HOSTNAME-0" {
-				id = v
-			}
-			otherMap[k] = v
-		}
-		processMap := a.process(data.EntityMap.Process)
-		for k, v := range processMap {
-			otherMap[k] = v
-		}
-		applicationMap := a.application(data.EntityMap.Application)
-		for k, v := range applicationMap {
-			otherMap[k] = v
-		}
-		fileExeMap := a.fileExePath(data.EntityMap.FileExePath)
-		for k, v := range fileExeMap {
-			otherMap[k] = v
-		}
-	case "ExistingCveNewInDatacenter":
-		// ImageFeature, ImageId, CVE, CustomRule
-		imageIdMap := a.imageId(data.EntityMap.Imageid)
-		for k, v := range imageIdMap {
-			if k == "IMAGE" {
-				id = v
-			}
-			otherMap[k] = v
-		}
-		imageFeatureMap := a.imageFeature(data.EntityMap.Imagefeature)
-		for k, v := range imageFeatureMap {
-			otherMap[k] = v
-		}
-		customRuleMap := a.customRule(data.EntityMap.Customrule)
-		for k, v := range customRuleMap {
-			otherMap[k] = v
-		}
+		id = aws.String(s)
 		cveMap := a.cve(data.EntityMap.Cve)
 		for k, v := range cveMap {
 			otherMap[k] = v
 		}
-	case "NewExternalServerDNSConn":
-		// DNS, User, Process, Application, FileExePath, Machine
-		id = aws.String(data.EntityMap.DnsName[0].HOSTNAME)
-		dnsMap := a.dns(data.EntityMap.DnsName)
-		for k, v := range dnsMap {
+		ruleMap := a.customRule(data.EntityMap.CustomRule)
+		for k, v := range ruleMap {
 			otherMap[k] = v
 		}
-		userMap := a.user(data.EntityMap.User)
-		for k, v := range userMap {
+		featureMap := a.imageFeature(data.EntityMap.ImageFeature)
+		for k, v := range featureMap {
 			otherMap[k] = v
 		}
 		machineMap := a.machine(data.EntityMap.Machine)
 		for k, v := range machineMap {
-			if k == "MACHINE-HOSTNAME-0" {
-				id = v
-			}
-			otherMap[k] = v
-		}
-		processMap := a.process(data.EntityMap.Process)
-		for k, v := range processMap {
-			otherMap[k] = v
-		}
-		applicationMap := a.application(data.EntityMap.Application)
-		for k, v := range applicationMap {
-			otherMap[k] = v
-		}
-		fileExeMap := a.fileExePath(data.EntityMap.FileExePath)
-		for k, v := range fileExeMap {
-			otherMap[k] = v
-		}
-	case "NewInternalConnection":
-		machineMap := a.machine(data.EntityMap.Machine)
-		for k, v := range machineMap {
-			if k == "MACHINE-HOSTNAME-0" {
-				id = v
-			}
 			otherMap[k] = v
 		}
 	default:
-		fmt.Printf("EventType: %s\n", data.EventType)
+		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
+		id = aws.String(d)
+		fmt.Printf("EventType has no rule: %s\n", data.EventType)
+		t, _ := json.Marshal(data)
+		if a.config.Telemetry {
+			lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
+		}
 	}
 	return id, otherMap
 }
@@ -251,6 +176,9 @@ func (a App) fileExePath(fileExePaths []types.FileExePath) map[string]*string {
 func (a App) process(processes []types.Process) map[string]*string {
 	other := make(map[string]*string)
 	for i, p := range processes {
+		if p.HOSTNAME != "" {
+			other["PROCESS-HOSTNAME-"+strconv.Itoa(i)] = aws.String(p.HOSTNAME)
+		}
 		if p.CMDLINE != "" {
 			other["PROCESS_CMDLINE-"+strconv.Itoa(i)] = aws.String(p.CMDLINE)
 		}
@@ -284,21 +212,37 @@ func (a App) user(users []types.User) map[string]*string {
 func (a App) ipAddress(ips []types.IpAddress) map[string]*string {
 	other := make(map[string]*string)
 	for i, p := range ips {
-		if p.COUNTRY != "" {
-			other["IP-COUNTRY-"+strconv.Itoa(i)] = aws.String(p.COUNTRY)
+		if p.Region != "" {
+			other["IP-REGION-"+strconv.Itoa(i)] = aws.String(p.Region)
 		}
-		if p.IPADDRESS != "" {
-			other["IP_ADDRESS-"+strconv.Itoa(i)] = aws.String(p.IPADDRESS)
+		if p.IPAddress != "" {
+			other["IP_ADDRESS-"+strconv.Itoa(i)] = aws.String(p.IPAddress)
 		}
-		if p.REGION != "" {
-			other["IP_REGION-"+strconv.Itoa(i)] = aws.String(p.REGION)
+		if p.ThreatTags != "" {
+			other["IP-THREAT-TAGS-"+strconv.Itoa(i)] = aws.String(p.ThreatTags)
 		}
-		if len(p.PORTLIST) > 0 {
+		if p.Country != "" {
+			other["IP-COUNTRY-"+strconv.Itoa(i)] = aws.String(p.Country)
+		}
+		if p.TotalOutBytes != 0 {
+			other["IP-TOTAL-OUT-BYTES-"+strconv.Itoa(i)] = aws.String(strconv.Itoa(p.TotalOutBytes))
+		}
+		if p.TotalInBytes != 0 {
+			other["IP-TOTAL-IN-BYTES-"+strconv.Itoa(i)] = aws.String(strconv.Itoa(p.TotalInBytes))
+		}
+		if len(p.PortList) > 0 {
 			var ports string
-			for _, port := range p.PORTLIST {
+			for _, port := range p.PortList {
 				ports = ports + " " + strconv.Itoa(port)
 			}
-			other["PORT_LIST-"+strconv.Itoa(i)] = aws.String(ports)
+			other["PORT-LIST-"+strconv.Itoa(i)] = aws.String(ports)
+		}
+		if len(p.ThreatSource) > 0 {
+			for j, threat := range p.ThreatSource {
+				other["THREAT-SOURCE-DATE-"+strconv.Itoa(j)] = aws.String(threat.Date)
+				other["THREAT-SOURCE-TAG-"+strconv.Itoa(i)] = aws.String(threat.PrimaryThreatTag)
+				other["THREAT-SOURCE-"+strconv.Itoa(i)] = aws.String(threat.Source)
+			}
 		}
 	}
 	return other
@@ -337,7 +281,7 @@ func (a App) imageId(images []types.Imageid) map[string]*string {
 	return other
 }
 
-func (a App) imageFeature(features []types.Imagefeature) map[string]*string {
+func (a App) imageFeature(features []types.ImageFeature) map[string]*string {
 	other := make(map[string]*string)
 	for _, f := range features {
 		if f.FeatureName != "" {
@@ -349,11 +293,14 @@ func (a App) imageFeature(features []types.Imagefeature) map[string]*string {
 		for i, cve := range f.Cve {
 			other[f.FeatureName+"-CVE-"+strconv.Itoa(i)] = aws.String(cve)
 		}
+		if f.FixedVersion != "" {
+			other["FEATURE-FIXED-VERSION"] = aws.String(f.FixedVersion)
+		}
 	}
 	return other
 }
 
-func (a App) customRule(cr []types.Customrule) map[string]*string {
+func (a App) customRule(cr []types.CustomRule) map[string]*string {
 	other := make(map[string]*string)
 	for i, r := range cr {
 		if r.RuleGUID != "" {
@@ -381,6 +328,36 @@ func (a App) cve(cves []types.Cve) map[string]*string {
 			s := getSeverity(c.Severity)
 			other[c.CveID+"-SEVERITY"] = s.Label
 		}
+	}
+	return other
+}
+
+func (a App) container(containers []types.Container) map[string]*string {
+	other := make(map[string]*string)
+	public := "no"
+	client := "no"
+	server := "no"
+	for i, c := range containers {
+		if c.HASEXTERNALCONNS == 1 {
+			public = "yes"
+		}
+		other["CONTAINER-PUBLIC-"+strconv.Itoa(i)] = aws.String(public)
+		if c.ISCLIENT == 1 {
+			client = "yes"
+		}
+		other["CONTAINER-CLIENT-"+strconv.Itoa(i)] = aws.String(client)
+		if c.ISSERVER == 1 {
+			server = "yes"
+		}
+		other["CONTAINER-SERVER-"+strconv.Itoa(i)] = aws.String(server)
+		if c.FIRSTSEENTIME != "" {
+			other["CONTAINER-FIRST-SEEN-"+strconv.Itoa(i)] = aws.String(c.FIRSTSEENTIME)
+		}
+		if c.CLUSTERNAME != "" {
+			other["CONTAINER-CLUSTER-"+strconv.Itoa(i)] = aws.String(c.CLUSTERNAME)
+		}
+		img := fmt.Sprintf("%s:%s", c.IMAGEREPO, c.IMAGETAG)
+		other["CONTAINER-IMAGE-"+strconv.Itoa(i)] = aws.String(img)
 	}
 	return other
 }
