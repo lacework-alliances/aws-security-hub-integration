@@ -79,7 +79,8 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 	otherMap := make(map[string]*string)
 	var id *string
 	switch data.EventType {
-	case "NewExternalClientBadIp", "NewExternalClientConn", "NewExternalServerIp", "NewChildLaunched":
+	case "NewExternalClientBadIp", "NewExternalClientConn", "NewExternalServerIp", "NewChildLaunched",
+		"NewExternalServerDNSConn":
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
 			id = aws.String(image)
@@ -119,6 +120,12 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		if len(data.EntityMap.User) > 0 {
 			userMap := a.user(data.EntityMap.User)
 			for k, v := range userMap {
+				otherMap[k] = v
+			}
+		}
+		if len(data.EntityMap.DnsName) > 0 {
+			dnsMap := a.dns(data.EntityMap.DnsName)
+			for k, v := range dnsMap {
 				otherMap[k] = v
 			}
 		}
