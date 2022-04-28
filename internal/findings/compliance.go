@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
+	"log"
 	"strings"
 	"time"
 )
@@ -32,6 +33,7 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 
 		switch cloud {
 		case "aws":
+			log.Println("cloud type is ", cloud)
 			// create the compliance
 			violation := e.EntityMap.Violationreason[0]
 			if len(violation.Reason) >= 64 {
@@ -99,7 +101,8 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 					} else if strings.Contains(v.Reason, "ACL") {
 						res.Type = aws.String("AwsEc2NetworkAcl")
 					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") ||
-						strings.Contains(v.Reason, "AWS_CIS_1_16") || strings.Contains(v.Reason, "MFANotActive") {
+						strings.Contains(v.Reason, "AWS_CIS_1_16") || strings.Contains(v.Reason, "MFANotActive") || strings.Contains(v.Reason, "AWS_CIS_1_23") ||
+						strings.Contains(v.Reason, "PasswordUsed") {
 						res.Type = aws.String("AwsIamUser")
 					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
 						res.Type = aws.String("AwsEc2Instance")
@@ -124,6 +127,7 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 							lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
 						}
 					}
+					log.Println("res.Type: ", res.Type)
 					details := c.mapRecID()
 					res.Details = &securityhub.ResourceDetails{
 						Other: details,

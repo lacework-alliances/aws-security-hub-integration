@@ -129,7 +129,7 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 				otherMap[k] = v
 			}
 		}
-	case "KnownHostCveDiscovered", "ExistingHostCveSeverityEscalated":
+	case "KnownHostCveDiscovered", "ExistingHostCveSeverityEscalated", "ExistingHostCveFixAvailable":
 		var s string
 		for _, cve := range data.EntityMap.Cve {
 			s = s + " " + cve.CveID
