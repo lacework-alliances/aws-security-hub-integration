@@ -108,18 +108,21 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 						res.Type = aws.String("AwsEc2Instance")
 					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") || strings.Contains(v.Reason, "VPC") {
 						res.Type = aws.String("AwsEc2Vpc")
-					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") { // KMS
+					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") || strings.Contains(v.Reason, "KMSKey") { // KMS
 						res.Type = aws.String("AwsKmsKey")
 					} else if strings.Contains(v.Reason, "AWS_CIS_2_7") {
 						res.Type = aws.String("AwsCloudTrailTrail")
 					} else if strings.Contains(v.Reason, "Ec2Instance") {
 						res.Type = aws.String("AwsEc2Instance")
-					} else if strings.Contains(v.Reason, "LogFileValidation") {
+					} else if strings.Contains(v.Reason, "LogFileValidation") || strings.Contains(v.Reason, "CloudTrailLogsNotEncrypted") {
 						res.Type = aws.String("AwsCloudTrailTrail")
 					} else if strings.Contains(v.Reason, "RDSDatabase") {
 						res.Type = aws.String("AwsRdsDbInstance")
 					} else if strings.Contains(v.Reason, "ElasticSearch") {
 						res.Type = aws.String("AwsElasticSearchDomain")
+					} else if strings.Contains(v.Reason, "NoLogFilterAndAlarm") || strings.Contains(v.Reason, "RegionInAccountWithoutAccess") ||
+						strings.Contains(v.Reason, "RootAccountMFANotEnabled") || strings.Contains(v.Reason, "PasswordPolicyHasWeakMinimumLength") {
+						res.Type = aws.String("Other")
 					} else {
 						res.Type = aws.String("Other")
 						t, _ := json.Marshal(data)
