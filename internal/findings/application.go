@@ -80,7 +80,7 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 	var id *string
 	switch data.EventType {
 	case "NewExternalClientBadIp", "NewExternalClientConn", "NewExternalServerIp", "NewChildLaunched",
-		"NewExternalServerDNSConn":
+		"NewExternalServerDNSConn", "NewInternalConnection", "NewBinaryType", "NewExternalServerBadDns":
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
 			id = aws.String(image)
