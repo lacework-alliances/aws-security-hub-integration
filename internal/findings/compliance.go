@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
-	"log"
 	"strings"
 	"time"
 )
@@ -33,27 +32,35 @@ func (c *Compliance) Findings(ctx context.Context) []*securityhub.AwsSecurityFin
 
 		switch cloud {
 		case "aws":
-			log.Println("cloud type is ", cloud)
 			// create the compliance
-			violation := e.EntityMap.Violationreason[0]
-			if len(violation.Reason) >= 64 {
-				reason = violation.Reason[:64]
+			if len(e.EntityMap.Violationreason) > 0 {
+				violation := e.EntityMap.Violationreason[0]
+				if len(violation.Reason) >= 64 {
+					reason = violation.Reason[:64]
+				} else {
+					reason = violation.Reason
+				}
 			} else {
-				reason = violation.Reason
+				reason = e.EventType
 			}
+
 			comp = securityhub.Compliance{
 				RelatedRequirements: aws.StringSlice([]string{reason}),
 				Status:              aws.String(securityhub.ComplianceStatusFailed),
 			}
 		default:
 			// create the compliance
-			violation := e.EntityMap.Violationreason[0]
-
-			if len(violation.Reason) >= 64 {
-				reason = violation.Reason[:64]
+			if len(e.EntityMap.Violationreason) > 0 {
+				violation := e.EntityMap.Violationreason[0]
+				if len(violation.Reason) >= 64 {
+					reason = violation.Reason[:64]
+				} else {
+					reason = violation.Reason
+				}
 			} else {
-				reason = violation.Reason
+				reason = e.EventType
 			}
+
 			comp = securityhub.Compliance{
 				RelatedRequirements: aws.StringSlice([]string{reason}),
 				Status:              aws.String(securityhub.ComplianceStatusFailed),
@@ -86,57 +93,67 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 	var resourceList []*securityhub.Resource
 	if strings.Contains(strings.ToLower(c.Event.Detail.Summary), "aws") {
 		for _, data := range c.Event.Detail.EventDetails.Data {
-			for _, v := range data.EntityMap.NewViolation {
-				if v.RecID != "" {
-					res := &securityhub.Resource{
-						Id:           aws.String(v.Resource),
-						Partition:    aws.String("aws"),
-						ResourceRole: aws.String("Target"),
-					}
-					// get the type
-					if strings.Contains(v.Reason, "SecurityGroup") || strings.Contains(strings.ToLower(v.Resource), "security-group") {
-						res.Type = aws.String("AwsEc2SecurityGroup")
-					} else if strings.Contains(v.Reason, "S3") || strings.Contains(v.Reason, "LoggingNotEnabled") {
-						res.Type = aws.String("AwsS3Bucket")
-					} else if strings.Contains(v.Reason, "ACL") {
-						res.Type = aws.String("AwsEc2NetworkAcl")
-					} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") ||
-						strings.Contains(v.Reason, "AWS_CIS_1_16") || strings.Contains(v.Reason, "MFANotActive") || strings.Contains(v.Reason, "AWS_CIS_1_23") ||
-						strings.Contains(v.Reason, "PasswordUsed") {
-						res.Type = aws.String("AwsIamUser")
-					} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
-						res.Type = aws.String("AwsEc2Instance")
-					} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") || strings.Contains(v.Reason, "VPC") {
-						res.Type = aws.String("AwsEc2Vpc")
-					} else if strings.Contains(v.Reason, "AWS_CIS_2_8") || strings.Contains(v.Reason, "KMSKey") { // KMS
-						res.Type = aws.String("AwsKmsKey")
-					} else if strings.Contains(v.Reason, "AWS_CIS_2_7") {
-						res.Type = aws.String("AwsCloudTrailTrail")
-					} else if strings.Contains(v.Reason, "Ec2Instance") {
-						res.Type = aws.String("AwsEc2Instance")
-					} else if strings.Contains(v.Reason, "LogFileValidation") || strings.Contains(v.Reason, "CloudTrailLogsNotEncrypted") {
-						res.Type = aws.String("AwsCloudTrailTrail")
-					} else if strings.Contains(v.Reason, "RDSDatabase") {
-						res.Type = aws.String("AwsRdsDbInstance")
-					} else if strings.Contains(v.Reason, "ElasticSearch") {
-						res.Type = aws.String("AwsElasticSearchDomain")
-					} else if strings.Contains(v.Reason, "NoLogFilterAndAlarm") || strings.Contains(v.Reason, "RegionInAccountWithoutAccess") ||
-						strings.Contains(v.Reason, "RootAccountMFANotEnabled") || strings.Contains(v.Reason, "PasswordPolicyHasWeakMinimumLength") {
-						res.Type = aws.String("Other")
-					} else {
-						res.Type = aws.String("Other")
-						t, _ := json.Marshal(data)
-						if c.config.Telemetry {
-							lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
+			if len(data.EntityMap.NewViolation) > 0 {
+				for _, v := range data.EntityMap.NewViolation {
+					if v.RecID != "" {
+						res := &securityhub.Resource{
+							Id:           aws.String(v.Resource),
+							Partition:    aws.String("aws"),
+							ResourceRole: aws.String("Target"),
 						}
+						// get the type
+						if strings.Contains(v.Reason, "SecurityGroup") || strings.Contains(strings.ToLower(v.Resource), "security-group") {
+							res.Type = aws.String("AwsEc2SecurityGroup")
+						} else if strings.Contains(v.Reason, "S3") || strings.Contains(v.Reason, "LoggingNotEnabled") {
+							res.Type = aws.String("AwsS3Bucket")
+						} else if strings.Contains(v.Reason, "ACL") {
+							res.Type = aws.String("AwsEc2NetworkAcl")
+						} else if strings.Contains(strings.ToLower(v.Reason), "iam") || strings.Contains(v.Reason, "AccessKey") ||
+							strings.Contains(v.Reason, "AWS_CIS_1_16") || strings.Contains(v.Reason, "MFANotActive") || strings.Contains(v.Reason, "AWS_CIS_1_23") ||
+							strings.Contains(v.Reason, "PasswordUsed") {
+							res.Type = aws.String("AwsIamUser")
+						} else if strings.Contains(v.Reason, "LW_AWS_NETWORKING_47") {
+							res.Type = aws.String("AwsEc2Instance")
+						} else if strings.Contains(strings.ToLower(v.Reason), "flowlogging") || strings.Contains(v.Reason, "VPC") {
+							res.Type = aws.String("AwsEc2Vpc")
+						} else if strings.Contains(v.Reason, "AWS_CIS_2_8") || strings.Contains(v.Reason, "KMSKey") { // KMS
+							res.Type = aws.String("AwsKmsKey")
+						} else if strings.Contains(v.Reason, "AWS_CIS_2_7") {
+							res.Type = aws.String("AwsCloudTrailTrail")
+						} else if strings.Contains(v.Reason, "Ec2Instance") {
+							res.Type = aws.String("AwsEc2Instance")
+						} else if strings.Contains(v.Reason, "LogFileValidation") || strings.Contains(v.Reason, "CloudTrailLogsNotEncrypted") ||
+							strings.Contains(v.Reason, "CloudWatchLog") {
+							res.Type = aws.String("AwsCloudTrailTrail")
+						} else if strings.Contains(v.Reason, "RDSDatabase") {
+							res.Type = aws.String("AwsRdsDbInstance")
+						} else if strings.Contains(v.Reason, "ElasticSearch") {
+							res.Type = aws.String("AwsElasticSearchDomain")
+						} else if strings.Contains(v.Reason, "NoLogFilterAndAlarm") || strings.Contains(v.Reason, "RegionInAccountWithoutAccess") ||
+							strings.Contains(v.Reason, "RootAccountMFANotEnabled") || strings.Contains(v.Reason, "PasswordPolicyHasWeakMinimumLength") {
+							res.Type = aws.String("Other")
+						} else {
+							res.Type = aws.String("Other")
+							t, _ := json.Marshal(data)
+							if c.config.Telemetry {
+								lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
+							}
+						}
+						details := c.mapRecID()
+						res.Details = &securityhub.ResourceDetails{
+							Other: details,
+						}
+						resourceList = append(resourceList, res)
 					}
-					log.Println("res.Type: ", res.Type)
-					details := c.mapRecID()
-					res.Details = &securityhub.ResourceDetails{
-						Other: details,
-					}
-					resourceList = append(resourceList, res)
 				}
+			} else {
+				res := &securityhub.Resource{
+					Id:           aws.String(c.Event.Detail.EventType),
+					Partition:    aws.String("aws"),
+					ResourceRole: aws.String("Target"),
+					Type:         aws.String("Other"),
+				}
+				resourceList = append(resourceList, res)
 			}
 		}
 	}
@@ -144,8 +161,20 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 }
 
 func (c *Compliance) getTypes() []*string {
+	var reason string
 	tList := []*string{aws.String(AWSCompliance)}
-	t := fmt.Sprintf("Software and Configuration Checks/Lacework/%s", c.Event.Detail.EventDetails.Data[0].EntityMap.Violationreason[0].Reason)
+	if len(c.Event.Detail.EventDetails.Data[0].EntityMap.Violationreason) > 0 {
+		violation := c.Event.Detail.EventDetails.Data[0].EntityMap.Violationreason[0]
+		if len(violation.Reason) >= 64 {
+			reason = violation.Reason[:64]
+		} else {
+			reason = violation.Reason
+		}
+	} else {
+		reason = c.Event.Detail.EventType
+	}
+
+	t := fmt.Sprintf("Software and Configuration Checks/Lacework/%s", reason)
 	tList = append(tList, aws.String(t))
 	return tList
 }

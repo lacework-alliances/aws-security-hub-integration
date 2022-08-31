@@ -51,7 +51,7 @@ func (a Aws) resource(data types.Data) []*securityhub.Resource {
 	var res securityhub.Resource
 	// create the basic resource
 	switch data.EventType {
-	case "NewUser":
+	case "NewUser", "NewAccount":
 		res = securityhub.Resource{
 			ResourceRole: aws.String("Target"),
 			Type:         aws.String("AwsIamUser"),
@@ -83,7 +83,12 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	switch data.EventType {
 	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion",
 		"UsageOfRootAccount", "FailedConsoleLogin", "CLoudTrailDefaultAlert":
-		id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		if len(data.EntityMap.CtUser[0].Username) > 64 {
+			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		} else {
+			id = aws.String(data.EntityMap.CtUser[0].Username)
+		}
+
 		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
 		for k, v := range ipMap {
 			otherMap[k] = v
@@ -94,7 +99,12 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		}
 	case "UnauthorizedAPICall", "IAMPolicyChanged", "NetworkGatewayChange", "RouteTableChange", "SecurityGroupChange":
 		rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
-		id = aws.String(rule[:64])
+		if len(rule) > 64 {
+			id = aws.String(rule[:64])
+		} else {
+			id = aws.String(rule)
+		}
+
 		ruleMap := a.rule(data.EntityMap.RulesTriggered)
 		for k, v := range ruleMap {
 			otherMap[k] = v
@@ -103,32 +113,75 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
 		"NewGrantAddedToCustomerMasterKey":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
-		id = aws.String(rule[:64])
+		if len(rule) > 64 {
+			id = aws.String(rule[:64])
+		} else {
+			id = aws.String(rule)
+		}
 		ctUserMap := a.ctUser(data.EntityMap.CtUser)
 		for k, v := range ctUserMap {
 			otherMap[k] = v
 		}
 	case "NewUser", "VPCChange":
-		id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		if len(data.EntityMap.CtUser[0].Username) > 64 {
+			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		} else {
+			id = aws.String(data.EntityMap.CtUser[0].Username)
+		}
+
 	case "IAMAccessKeyChanged":
-		id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+		if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
+			id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+		} else {
+			id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+		}
 	case "NewRegion", "NewVPC":
-		id = aws.String(data.EntityMap.Region[0].Region[:64])
+		if len(data.EntityMap.Region[0].Region) > 64 {
+			id = aws.String(data.EntityMap.Region[0].Region[:64])
+		} else {
+			id = aws.String(data.EntityMap.Region[0].Region)
+		}
+
 	case "NewS3Bucket", "S3BucketDeleted":
 		for _, resource := range data.EntityMap.Resource {
 			if resource.Name == "bucketName" {
-				id = aws.String(resource.Value[:64])
+				if len(resource.Value) > 64 {
+					id = aws.String(resource.Value[:64])
+				} else {
+					id = aws.String(resource.Value)
+				}
 			}
 		}
 	case "CloudTrailChanged", "CloudTrailDeleted":
 		for _, resource := range data.EntityMap.Resource {
 			if resource.Name == "name" {
-				id = aws.String(resource.Value[:64])
+				if len(resource.Value) > 64 {
+					id = aws.String(resource.Value[:64])
+				} else {
+					id = aws.String(resource.Value)
+				}
+			}
+		}
+	case "CloudTrailDefaultAlert":
+		if len(data.EntityMap.CtUser) > 0 {
+			if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
+				id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+			} else {
+				id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+			}
+			ctUserMap := a.ctUser(data.EntityMap.CtUser)
+			for k, v := range ctUserMap {
+				otherMap[k] = v
 			}
 		}
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
-		id = aws.String(d[:64])
+		if len(d) > 64 {
+			id = aws.String(d[:64])
+		} else {
+			id = aws.String(d)
+		}
+
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
 		if a.config.Telemetry {

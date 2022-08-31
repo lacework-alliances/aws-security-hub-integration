@@ -83,9 +83,18 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		"NewExternalServerDNSConn", "NewInternalConnection", "NewBinaryType", "NewExternalServerBadDns":
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
-			id = aws.String(image[:64])
+			if len(image) > 64 {
+				id = aws.String(image[:64])
+			} else {
+				id = aws.String(image)
+			}
 		} else {
-			id = aws.String(data.EntityMap.Machine[0].Hostname[:64])
+			if len(data.EntityMap.Machine[0].Hostname) > 64 {
+				id = aws.String(data.EntityMap.Machine[0].Hostname[:64])
+			} else {
+				id = aws.String(data.EntityMap.Machine[0].Hostname)
+			}
+
 		}
 		if len(data.EntityMap.Container) > 0 {
 			containerMap := a.container(data.EntityMap.Container)
@@ -134,7 +143,12 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		for _, cve := range data.EntityMap.Cve {
 			s = s + " " + cve.CveID
 		}
-		id = aws.String(s[:64])
+		if len(s) > 64 {
+			id = aws.String(s[:64])
+		} else {
+			id = aws.String(s)
+		}
+
 		cveMap := a.cve(data.EntityMap.Cve)
 		for k, v := range cveMap {
 			otherMap[k] = v
@@ -153,7 +167,12 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		}
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
-		id = aws.String(d[:64])
+		if len(d) > 64 {
+			id = aws.String(d[:64])
+		} else {
+			id = aws.String(d)
+		}
+
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
 		if len(data.EntityMap.Container) > 0 {
