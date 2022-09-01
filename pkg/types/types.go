@@ -219,6 +219,9 @@ type EntityMap struct {
 	RecidAzure      []RecidAzure      `json:"RecId_Azure,omitempty"`
 	DnsName         []DnsName         `json:"DnsName,omitempty"`
 	Container       []Container       `json:"Container,omitempty"`
+	K8Pod           []K8Pod           `json:"K8Pod,omitempty"`
+	K8Namespace     []K8Namespace     `json:"K8Namespace,omitempty"`
+	K8Cluster       []K8Cluster       `json:"K8Cluster,omitempty"`
 }
 
 type Data struct {
@@ -261,4 +264,22 @@ type Honeyvent struct {
 	Function        string `json:"function,omitempty"`
 	Event           string `json:"event,omitempty"`
 	EventData       string `json:"event-data,omitempty"`
+}
+
+type K8Pod struct {
+	NAMESPACE []string `json:"NAMESPACE"`
+	POD       string   `json:"POD"`
+}
+
+type K8Namespace struct {
+	NAMESPACE string   `json:"NAMESPACE"`
+	POD       []string `json:"POD"`
+	CLUSTER   []string `json:"CLUSTER"`
+	HOSTNAME  []string `json:"HOST NAME"`
+}
+
+type K8Cluster struct {
+	NAMESPACE   []string `json:"NAMESPACE"`
+	CLUSTERNAME string   `json:"CLUSTER NAME"`
+	HOSTNAME    []string `json:"HOST NAME"`
 }

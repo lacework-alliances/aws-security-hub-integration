@@ -76,6 +76,7 @@ func (a App) resource(data types.Data) []*securityhub.Resource {
 }
 
 func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
+	var count int
 	otherMap := make(map[string]*string)
 	var id *string
 	switch data.EventType {
@@ -99,43 +100,65 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		if len(data.EntityMap.Container) > 0 {
 			containerMap := a.container(data.EntityMap.Container)
 			for k, v := range containerMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
+
 			}
 		}
 		if len(data.EntityMap.Machine) > 0 {
 			machineMap := a.machine(data.EntityMap.Machine)
 			for k, v := range machineMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.Application) > 0 {
 			appMap := a.application(data.EntityMap.Application)
 			for k, v := range appMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.Process) > 0 {
 			procMap := a.process(data.EntityMap.Process)
 			for k, v := range procMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.FileExePath) > 0 {
 			fileMap := a.fileExePath(data.EntityMap.FileExePath)
 			for k, v := range fileMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.User) > 0 {
 			userMap := a.user(data.EntityMap.User)
 			for k, v := range userMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.DnsName) > 0 {
 			dnsMap := a.dns(data.EntityMap.DnsName)
 			for k, v := range dnsMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 	case "KnownHostCveDiscovered", "ExistingHostCveSeverityEscalated", "ExistingHostCveFixAvailable":
@@ -151,19 +174,54 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 
 		cveMap := a.cve(data.EntityMap.Cve)
 		for k, v := range cveMap {
-			otherMap[k] = v
+			if count < 50 {
+				count++
+				otherMap[k] = v
+			}
 		}
 		ruleMap := a.customRule(data.EntityMap.CustomRule)
 		for k, v := range ruleMap {
-			otherMap[k] = v
+			if count < 50 {
+				count++
+				otherMap[k] = v
+			}
 		}
 		featureMap := a.imageFeature(data.EntityMap.ImageFeature)
 		for k, v := range featureMap {
-			otherMap[k] = v
+			if count < 50 {
+				count++
+				otherMap[k] = v
+			}
 		}
 		machineMap := a.machine(data.EntityMap.Machine)
 		for k, v := range machineMap {
-			otherMap[k] = v
+			if count < 50 {
+				count++
+				otherMap[k] = v
+			}
+		}
+	case "NewK8Pod":
+		if len(data.EntityMap.K8Pod) > 0 {
+			pod := fmt.Sprintf("%s:%s", data.EntityMap.K8Pod[0].NAMESPACE[0], data.EntityMap.K8Pod[0].POD)
+			if len(pod) > 64 {
+				id = aws.String(pod[:64])
+			} else {
+				id = aws.String(pod)
+			}
+		} else if len(data.EntityMap.K8Namespace) > 0 {
+			pod := fmt.Sprintf("%s:%s", data.EntityMap.K8Namespace[0].NAMESPACE, data.EntityMap.K8Namespace[0].POD[0])
+			if len(pod) > 64 {
+				id = aws.String(pod[:64])
+			} else {
+				id = aws.String(pod)
+			}
+		}
+		machineMap := a.machine(data.EntityMap.Machine)
+		for k, v := range machineMap {
+			if count < 50 {
+				count++
+				otherMap[k] = v
+			}
 		}
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
@@ -184,43 +242,64 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		if len(data.EntityMap.Container) > 0 {
 			containerMap := a.container(data.EntityMap.Container)
 			for k, v := range containerMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.Machine) > 0 {
 			machineMap := a.machine(data.EntityMap.Machine)
 			for k, v := range machineMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.Application) > 0 {
 			appMap := a.application(data.EntityMap.Application)
 			for k, v := range appMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.Process) > 0 {
 			procMap := a.process(data.EntityMap.Process)
 			for k, v := range procMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.FileExePath) > 0 {
 			fileMap := a.fileExePath(data.EntityMap.FileExePath)
 			for k, v := range fileMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.User) > 0 {
 			userMap := a.user(data.EntityMap.User)
 			for k, v := range userMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if len(data.EntityMap.DnsName) > 0 {
 			dnsMap := a.dns(data.EntityMap.DnsName)
 			for k, v := range dnsMap {
-				otherMap[k] = v
+				if count < 50 {
+					count++
+					otherMap[k] = v
+				}
 			}
 		}
 		if a.config.Telemetry {
