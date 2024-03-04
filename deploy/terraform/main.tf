@@ -56,6 +56,26 @@ resource "aws_sqs_queue" "lw-sechub-queue" {
   message_retention_seconds = 86400
 }
 
+data "aws_iam_policy_document" "lw-sechub-queue-policy" {
+  statement {
+    sid    = "events"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.lw-sechub-queue.arn]
+  }
+}
+
+resource "aws_sqs_queue_policy" "lw-sechub-queue-access-policy" {
+  queue_url = aws_sqs_queue.lw-sechub-queue.id
+  policy    = data.aws_iam_policy_document.lw-sechub-queue-policy.json
+}
+
 resource "aws_iam_role_policy_attachment" "basic-lambda" {
   role = aws_iam_role.lw-sechub-role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
