@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws      = {
       source  = "hashicorp/aws"
-      version = "~> 3.70.0"
+      version = "~> 5.38.0"
     }
     lacework = {
       source = "lacework/lacework"
@@ -177,6 +177,7 @@ resource "lacework_alert_rule" "all_severities" {
   #best starting point is the 'All Aws Accounts' resource group
   #resource_groups  = [""]
   severities       = ["Critical", "High", "Medium", "Low", "Info"]
+  alert_subcategories = ["Compliance", "Application", "Cloud Activity", "File", "Machine", "User", "Platform", "Kubernetes Activity", "Registry", "SystemCall", "Host Vulnerability", "Container Vulnerability", "Threat Intel"]
 
   depends_on = [
     lacework_alert_channel_aws_cloudwatch.all_events_sechub
