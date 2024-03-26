@@ -147,6 +147,10 @@ func InitMap() map[string]string {
 	eventMap["GcpUserAccessingRegion"] = TtpDiscovery
 	eventMap["GcpServiceAccessedInRegion"] = TtpDiscovery
 	eventMap["ServiceCalledGcpApi"] = TtpDiscovery
+	eventMap["GCPSACreated"] = TtpDiscovery
+	eventMap["GCPGCSBucketCreated"] = TtpDiscovery
+	eventMap["GCPProjectIAMPolicyChanged"] = TtpDiscovery
+	eventMap["GCPSAAccessKeyChanged"] = TtpDiscovery
 	eventMap["GcpApiFailedWithError"] = TtpError
 
 	eventMap["NewK8sAuditLogClusterRole"] = TtpDiscovery

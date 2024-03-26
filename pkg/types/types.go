@@ -9,6 +9,8 @@ type Config struct {
 	Region         string
 	Telemetry      bool
 	Version        string
+	HoneyDataset   string
+	HoneyKey       string
 }
 
 type LaceworkEvent struct {

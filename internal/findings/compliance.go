@@ -136,7 +136,7 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 							res.Type = aws.String("Other")
 							t, _ := json.Marshal(data)
 							if c.config.Telemetry {
-								lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance")
+								lacework.SendHoneycombEvent(c.config.Instance, "compliance_type_not_found", "", c.config.Version, string(t), "mapCompliance", c.config.HoneyKey, c.config.HoneyDataset)
 							}
 						}
 						details := c.mapRecID()
@@ -150,6 +150,36 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 				res := &securityhub.Resource{
 					Id:           aws.String(c.Event.Detail.EventType),
 					Partition:    aws.String("aws"),
+					ResourceRole: aws.String("Target"),
+					Type:         aws.String("Other"),
+				}
+
+				resourceList = append(resourceList, res)
+			}
+		}
+	} else if strings.Contains(strings.ToLower(c.Event.Detail.Summary), "gcp") {
+		for _, data := range c.Event.Detail.EventDetails.Data {
+			if len(data.EntityMap.NewViolation) > 0 {
+				for index, v := range data.EntityMap.NewViolation {
+					if v.RecID != "" {
+						res := &securityhub.Resource{
+							Id:           aws.String(v.Resource),
+							Partition:    aws.String("gcp"),
+							ResourceRole: aws.String("Target"),
+						}
+
+						if len(data.EntityMap.Resource) > index {
+							res.Id = aws.String(data.EntityMap.Resource[index].Value)
+							res.Type = aws.String(data.EntityMap.Resource[index].Name)
+						}
+
+						resourceList = append(resourceList, res)
+					}
+				}
+			} else {
+				res := &securityhub.Resource{
+					Id:           aws.String(c.Event.Detail.EventType),
+					Partition:    aws.String("gcp"),
 					ResourceRole: aws.String("Target"),
 					Type:         aws.String("Other"),
 				}

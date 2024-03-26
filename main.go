@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,10 +16,16 @@ import (
 	"os"
 )
 
+const (
+	BUILD    = "$BUILD"
+	HONEYKEY = "$HONEYKEY"
+	DATASET  = "$DATASET"
+)
+
 var (
 	defaultAccount string
 	instance       string
-	version        string
+	version        = BUILD
 	telemetry      bool
 )
 
@@ -46,6 +53,8 @@ func main() {
 		Region:         os.Getenv("AWS_REGION"),
 		Telemetry:      telemetry,
 		Version:        version,
+		HoneyKey:       HONEYKEY,
+		HoneyDataset:   DATASET,
 	}
 	ctx := context.WithValue(context.Background(), "config", cfg)
 	lam.StartWithContext(ctx, handler)
@@ -56,11 +65,11 @@ func handler(ctx context.Context, e events.SQSEvent) {
 	batch := securityhub.BatchImportFindingsInput{}
 	for _, message := range e.Records {
 		fmt.Printf("%s \n", message.Body)
-
-		err := json.Unmarshal([]byte(message.Body), &event)
+		body := bytes.TrimPrefix([]byte(message.Body), []byte("\xef\xbb\xbf"))
+		err := json.Unmarshal(body, &event)
 		if err != nil {
 			if telemetry {
-				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "record")
+				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "record", HONEYKEY, DATASET)
 			}
 			fmt.Printf("error while unmarshaling event message: %v\n", err)
 		}
@@ -73,7 +82,7 @@ func handler(ctx context.Context, e events.SQSEvent) {
 			})
 			if err != nil {
 				if telemetry {
-					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session")
+					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session", HONEYKEY, DATASET)
 				}
 				fmt.Println("error while creating aws session: ", err)
 			}
@@ -82,11 +91,11 @@ func handler(ctx context.Context, e events.SQSEvent) {
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
 				if telemetry {
-					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings")
+					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings", HONEYKEY, DATASET)
 				}
 				fmt.Println("error while importing batch: ", err)
 			}
-			if *output.FailedCount > int64(0) {
+			if output != nil && *output.FailedCount > int64(0) {
 				fmt.Printf("Failed Account: %s - Failed Region: %s\n", event.Account, event.Region)
 				fmt.Println(output.String())
 			}

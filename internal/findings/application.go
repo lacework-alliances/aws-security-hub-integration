@@ -236,7 +236,7 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
 			id = aws.String(image)
-		} else {
+		} else if len(data.EntityMap.Machine) > 0 {
 			id = aws.String(data.EntityMap.Machine[0].Hostname)
 		}
 		if len(data.EntityMap.Container) > 0 {
@@ -303,7 +303,7 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 			}
 		}
 		if a.config.Telemetry {
-			lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails")
+			lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails", a.config.HoneyKey, a.config.HoneyDataset)
 		}
 	}
 	return id, otherMap

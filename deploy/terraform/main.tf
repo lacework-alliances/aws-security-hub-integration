@@ -86,9 +86,9 @@ resource "aws_lambda_function" "lw-sechub-integration" {
   function_name     = "lw-sechub-integration"
   description       = "This lambda is used to receive SQS messages from Lacework and submit findings to Security Hub"
   role              = aws_iam_role.lw-sechub-role.arn
-  handler           = "main"
+  handler           = "bootstrap"
   source_code_hash  = filebase64sha256("../../function.zip")
-  runtime           = "go1.x"
+  runtime           = "provided.al2023"
   memory_size       = 256
   timeout           = 30
 
