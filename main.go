@@ -63,6 +63,7 @@ func main() {
 func handler(ctx context.Context, e events.SQSEvent) {
 	var event types.LaceworkEvent
 	batch := securityhub.BatchImportFindingsInput{}
+	eventCount := 0
 	for _, message := range e.Records {
 		fmt.Printf("%s \n", message.Body)
 		body := bytes.TrimPrefix([]byte(message.Body), []byte("\xef\xbb\xbf"))
@@ -71,9 +72,9 @@ func handler(ctx context.Context, e events.SQSEvent) {
 			if telemetry {
 				lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "record", HONEYKEY, DATASET)
 			}
-			fmt.Printf("error while unmarshaling event message: %v\n", err)
+			fmt.Printf("ERROR: while unmarshaling LW event message: %v\n", err)
 		}
-
+		eventCount++
 		f := findings.EventToASFF(ctx, event)
 		if len(f) > 0 {
 			batch.Findings = append(batch.Findings, f...)
@@ -84,20 +85,32 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				if telemetry {
 					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "aws_session", HONEYKEY, DATASET)
 				}
-				fmt.Println("error while creating aws session: ", err)
+				fmt.Println("ERROR: while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
 			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
+				errStr := fmt.Sprintf("ERROR: while importing batch: %s", err)
 				if telemetry {
-					lacework.SendHoneycombEvent(instance, "error", "", version, err.Error(), "BatchImportFindings", HONEYKEY, DATASET)
+					lacework.SendHoneycombEvent(instance, "error", "", version, errStr, "BatchImportFindings", HONEYKEY, DATASET)
 				}
-				fmt.Println("error while importing batch: ", err)
+				fmt.Println(errStr)
 			}
 			if output != nil && *output.FailedCount > int64(0) {
-				fmt.Printf("Failed Account: %s - Failed Region: %s\n", event.Account, event.Region)
-				fmt.Println(output.String())
+				errStr := fmt.Sprintf("ERROR: Failed Account: %s - Failed Region: %s \n %s \n", event.Account, event.Region, output.String())
+				if telemetry {
+					lacework.SendHoneycombEvent(instance, "error", "", version, errStr, "BatchImportFindings", HONEYKEY, DATASET)
+				}
+			}
+			if eventCount != len(batch.Findings) {
+				errStr := fmt.Sprintf("ERROR: Mismatch between received lacework event count %d and sent SecHub findings count %d\n", eventCount, len(batch.Findings))
+				if telemetry {
+					lacework.SendHoneycombEvent(instance, "error", "", version, errStr, "BatchImportFindings", HONEYKEY, DATASET)
+				}
+				fmt.Printf(errStr)
+			} else {
+				fmt.Printf("Successfully sent %d finding(s) to Security Hub\n", len(batch.Findings))
 			}
 		}
 	}
