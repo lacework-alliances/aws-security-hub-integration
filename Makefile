@@ -1,5 +1,5 @@
 BUCKET_NAME := lacework-alliances
-KEY_PREFIX := lacework-aws-security-hub
+KEY_PREFIX := lacework-aws-security-hub-dev
 LAMBDA_PREFIX := lambda/
 DATASET := lacework-alliances-prod
 

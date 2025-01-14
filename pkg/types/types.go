@@ -106,7 +106,7 @@ type ThreatSource struct {
 type Machine struct {
 	ExternalIP     string  `json:"EXTERNAL_IP"`
 	Hostname       string  `json:"HOSTNAME"`
-	Mid            int     `json:"MID"`
+	Mid            string  `json:"MID"`
 	IsExternal     int     `json:"IS_EXTERNAL"`
 	CPUPercentage  float64 `json:"CPU_PERCENTAGE"`
 	InternalIPAddr string  `json:"INTERNAL_IP_ADDR"`
