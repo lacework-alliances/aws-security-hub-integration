@@ -1,6 +1,7 @@
-# Lacework AWS Security Hub Integration
+# Lacework FortiCNAPP AWS Security Hub Integration
 
-![Lacework](docs/images/lacework.png)
+![Fortinet-logo-rgb-black-red](https://github.com/user-attachments/assets/76ca9e76-577e-4c30-ace8-74a7961e5a87)
+
 
 ## Overview
 The Lacework integration with AWS Security Hub pushes cloud security events from the Lacework Polygraph Data Platform (PDP) to Security Hub, allowing an 
@@ -12,7 +13,7 @@ Cloudwatch/Eventbridge alert into a Security Hub finding. This is done by the fo
 Lambda. 
 
 
-![Security Hub Integration Flow](docs/images/aws-security-hub.png)
+![security-hub](https://github.com/user-attachments/assets/50c989ec-3ef5-444d-941b-af9a9a315259)
 
 ### Lacework Event to Security Hub Finding
 
