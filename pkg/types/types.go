@@ -151,11 +151,11 @@ type Process struct {
 }
 
 type Application struct {
-	HASEXTERNALCONNS  int       `json:"HAS_EXTERNAL_CONNS"`
+	HASEXTERNALCONNS  bool      `json:"HAS_EXTERNAL_CONNS"`
 	ISSERVER          int       `json:"IS_SERVER"`
 	APPLICATION       string    `json:"APPLICATION"`
 	EARLIESTKNOWNTIME time.Time `json:"EARLIEST_KNOWN_TIME"`
-	ISCLIENT          int       `json:"IS_CLIENT"`
+	ISCLIENT          bool      `json:"IS_CLIENT"`
 }
 
 type FileExePath struct {
