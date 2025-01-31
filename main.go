@@ -88,6 +88,7 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				fmt.Println("ERROR: while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
+			fmt.Printf("%+v\n", batch.Findings)
 			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
@@ -99,12 +100,14 @@ func handler(ctx context.Context, e events.SQSEvent) {
 			}
 			if output != nil && *output.FailedCount > int64(0) {
 				errStr := fmt.Sprintf("ERROR: Failed Account: %s - Failed Region: %s \n %s \n", event.Account, event.Region, output.String())
+				fmt.Println(errStr)
 				if telemetry {
 					lacework.SendHoneycombEvent(instance, "error", "", version, errStr, "BatchImportFindings", HONEYKEY, DATASET)
 				}
 			}
 			if eventCount != len(batch.Findings) {
 				errStr := fmt.Sprintf("ERROR: Mismatch between received lacework event count %d and sent SecHub findings count %d\n", eventCount, len(batch.Findings))
+				fmt.Println(errStr)
 				if telemetry {
 					lacework.SendHoneycombEvent(instance, "error", "", version, errStr, "BatchImportFindings", HONEYKEY, DATASET)
 				}
