@@ -88,7 +88,7 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				fmt.Println("ERROR: while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
-			fmt.Printf("%+v\n", batch.Findings)
+			fmt.Printf("%+v", batch.Findings)
 			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {

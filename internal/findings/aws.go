@@ -78,8 +78,19 @@ func (a Aws) resource(data types.Data) []*securityhub.Resource {
 func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	otherMap := make(map[string]*string)
 	var id *string
-	// Check the EVENT_TYPE and make decisions
+	
 
+	// Helper function to safely add items to otherMap
+	addToMap := func(newItems map[string]*string) {
+		for k, v := range newItems {
+			if len(otherMap) >= 50 {
+				return // Stop adding if we've reached 50 items as anything over 50 violates accepted schema
+			}
+			otherMap[k] = v
+		}
+	}
+
+	// Check the EVENT_TYPE and make decisions
 	switch data.EventType {
 	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion",
 		"UsageOfRootAccount", "FailedConsoleLogin", "CLoudTrailDefaultAlert":
@@ -88,15 +99,9 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(data.EntityMap.CtUser[0].Username)
 		}
+		addToMap(a.ipAddress(data.EntityMap.SourceIpAddress))
+		addToMap(a.API(data.EntityMap.API))
 
-		ipMap := a.ipAddress(data.EntityMap.SourceIpAddress)
-		for k, v := range ipMap {
-			otherMap[k] = v
-		}
-		apiMap := a.API(data.EntityMap.API)
-		for k, v := range apiMap {
-			otherMap[k] = v
-		}
 	case "UnauthorizedAPICall", "IAMPolicyChanged", "NetworkGatewayChange", "RouteTableChange", "SecurityGroupChange":
 		rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
 		if len(rule) > 64 {
@@ -104,11 +109,8 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(rule)
 		}
+		addToMap(a.rule(data.EntityMap.RulesTriggered))
 
-		ruleMap := a.rule(data.EntityMap.RulesTriggered)
-		for k, v := range ruleMap {
-			otherMap[k] = v
-		}
 	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "S3BucketACLChanged",
 		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
 		"NewGrantAddedToCustomerMasterKey":
@@ -118,10 +120,8 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(rule)
 		}
-		ctUserMap := a.ctUser(data.EntityMap.CtUser)
-		for k, v := range ctUserMap {
-			otherMap[k] = v
-		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
+
 	case "NewUser", "VPCChange":
 		if len(data.EntityMap.CtUser[0].Username) > 64 {
 			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
@@ -135,6 +135,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 		}
+
 	case "NewRegion", "NewVPC":
 		if len(data.EntityMap.Region[0].Region) > 64 {
 			id = aws.String(data.EntityMap.Region[0].Region[:64])
@@ -152,6 +153,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 				}
 			}
 		}
+
 	case "CloudTrailChanged", "CloudTrailDeleted":
 		for _, resource := range data.EntityMap.Resource {
 			if resource.Name == "name" {
@@ -162,6 +164,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 				}
 			}
 		}
+
 	case "CloudTrailDefaultAlert":
 		if len(data.EntityMap.CtUser) > 0 {
 			if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
@@ -169,11 +172,9 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 			} else {
 				id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 			}
-			ctUserMap := a.ctUser(data.EntityMap.CtUser)
-			for k, v := range ctUserMap {
-				otherMap[k] = v
-			}
+			addToMap(a.ctUser(data.EntityMap.CtUser))
 		}
+
 	default:
 		d := fmt.Sprintf("%s-%s", data.EventModel, data.EventType)
 		if len(d) > 64 {
@@ -181,7 +182,6 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(d)
 		}
-
 		fmt.Printf("EventType has no rule: %s\n", data.EventType)
 		t, _ := json.Marshal(data)
 		if a.config.Telemetry {

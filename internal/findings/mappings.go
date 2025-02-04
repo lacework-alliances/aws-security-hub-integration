@@ -19,6 +19,7 @@ func InitMap() map[string]string {
 	eventMap["NewExternalClientDns"] = TtpInitialAccess
 	eventMap["NewExternalClientConn"] = TtpInitialAccess
 	eventMap["NewExternalClientBadIpConn"] = UnusualIP
+	eventMap["ExternalClientBadIpConn"] = UnusualIP
 	eventMap["NewExternalClientBadIp"] = UnusualIP
 	eventMap["NewExternalClientBadDns"] = UnusualIP
 	eventMap["NewInternalServerIP"] = TtpInitialAccess
