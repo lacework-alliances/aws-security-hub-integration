@@ -59,7 +59,7 @@ type CtUser struct {
 	AccountID   string   `json:"ACCOUNT_ID"`
 	RegionList  []string `json:"REGION_LIST"`
 	Username    string   `json:"USERNAME"`
-	Mfa         bool      `json:"MFA"`
+	Mfa         bool     `json:"MFA"`
 	APIList     []string `json:"API_LIST"`
 	PrincipalID string   `json:"PRINCIPAL_ID"`
 }
