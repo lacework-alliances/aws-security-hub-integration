@@ -85,7 +85,7 @@ func InitMap() map[string]string {
 	eventMap["CustomerMasterKeyScheduledForDeletion"] = TtpCredential
 	eventMap["SuccessfulConsoleLoginWithoutMFA"] = TtpCredential
 	eventMap["FailedConsoleLogin"] = TtpCredential
-	eventMap["Usage of Root Account"] = TtpPrivilege
+	eventMap["UsageOfRootAccount"] = TtpPrivilege
 	eventMap["UnauthorizedAPICall"] = TtpCredential
 	eventMap["ConfigServiceChange"] = TtpDiscovery
 	eventMap["CloudTrailDefaultAlert"] = TtpCollection
