@@ -59,7 +59,7 @@ type CtUser struct {
 	AccountID   string   `json:"ACCOUNT_ID"`
 	RegionList  []string `json:"REGION_LIST"`
 	Username    string   `json:"USERNAME"`
-	Mfa         bool     `json:"MFA"`
+	Mfa         int      `json:"MFA"`
 	APIList     []string `json:"API_LIST"`
 	PrincipalID string   `json:"PRINCIPAL_ID"`
 }
@@ -151,11 +151,11 @@ type Process struct {
 }
 
 type Application struct {
-	HASEXTERNALCONNS  bool      `json:"HAS_EXTERNAL_CONNS"`
+	HASEXTERNALCONNS  int       `json:"HAS_EXTERNAL_CONNS"`
 	ISSERVER          int       `json:"IS_SERVER"`
 	APPLICATION       string    `json:"APPLICATION"`
 	EARLIESTKNOWNTIME time.Time `json:"EARLIEST_KNOWN_TIME"`
-	ISCLIENT          bool      `json:"IS_CLIENT"`
+	ISCLIENT          int       `json:"IS_CLIENT"`
 }
 
 type FileExePath struct {
