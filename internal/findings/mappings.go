@@ -1,19 +1,9 @@
 package findings
 
-type EventMap map[string]string
-
-// Get returns an AWS Finding Type for an event type, defaulting to TtpDefault if not found
-func (m EventMap) Get(key string) string {
-    if value, exists := m[key]; exists {
-        return value
-    }
-    return TtpDefault
-}
-
 // InitMap initializes maps based on the event type to an AWS Finding Type
-func InitMap() EventMap {
+func InitMap() map[string]string {
 	// map[EVENT_TYPE]SEC_HUB_TYPE{}
-	eventMap := EventMap{}
+	var eventMap = map[string]string{}
 
 	eventMap["NewExternalServerDns"] = TtpInitialAccess
 	eventMap["NewExternalServerIp"] = TtpInitialAccess
