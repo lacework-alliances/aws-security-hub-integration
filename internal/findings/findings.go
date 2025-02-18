@@ -27,6 +27,7 @@ const (
 	SoftwareCVE           = "Software and Configuration Checks/Vulnerabilities/CVE"
 	SoftwarePolicy        = "Software and Configuration Checks/Policy"
 	AWSCompliance         = "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+	TtpComposite          = "TTPs/Unusual Behaviors"
 
 	ArnFormat = "arn:aws:securityhub:%s::product/lacework/lacework"
 
@@ -84,13 +85,20 @@ func mapDefault(ctx context.Context, le types.LaceworkEvent) securityhub.AwsSecu
 	} else {
 		desc = le.Detail.Summary
 	}
+
+	checkForEmptyTypes := getTypes(cfg.EventMap, le.Detail.EventType)
+	if len(checkForEmptyTypes) == 1 && aws.StringValue(checkForEmptyTypes[0]) == "" {
+		checkForEmptyTypes = []*string{aws.String("Uncategorized/GeneralFinding")} // Default value for missing mype in mappings.go
+		fmt.Printf("Unknown EvnetType: %s\n", le.Detail.EventType)
+	}
+	
 	finding := securityhub.AwsSecurityFinding{
 		AwsAccountId:  aws.String(getAwsAccount(cfg.DefaultAccount, le.Detail.Summary)),
 		GeneratorId:   aws.String(le.Detail.EventCategory),
 		SchemaVersion: aws.String(SCHEMA),
 		Id:            aws.String(le.ID),
 		ProductArn:    getProductArn(cfg.Region),
-		Types:         getTypes(cfg.EventMap, le.Detail.EventType),
+		Types:         checkForEmptyTypes,
 		CreatedAt:     aws.String(le.Time.Format(time.RFC3339)),
 		UpdatedAt:     aws.String(le.Time.Format(time.RFC3339)),
 		Severity:      getSeverity(le.Detail.Severity),
