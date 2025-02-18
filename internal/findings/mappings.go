@@ -5,6 +5,13 @@ func InitMap() map[string]string {
 	// map[EVENT_TYPE]SEC_HUB_TYPE{}
 	var eventMap = map[string]string{}
 
+	eventMap["PotentialPenetrationTest"] = TtpComposite
+	eventMap["PotentiallyCompromisedAwsCredentials"] = TtpComposite
+	eventMap["PotentiallyCompromisedHost"] = TtpComposite
+	eventMap["PotentiallyCompromisedAzure"] = TtpComposite
+	eventMap["PotentiallyCompromisedGCP"] = TtpComposite
+	eventMap["PotentiallyCompromisedK8s"] = TtpComposite
+	
 	eventMap["NewExternalServerDns"] = TtpInitialAccess
 	eventMap["NewExternalServerIp"] = TtpInitialAccess
 	eventMap["NewExternalDnsServer"] = TtpInitialAccess
