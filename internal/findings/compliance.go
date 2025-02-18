@@ -164,7 +164,6 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 					if v.RecID != "" {
 						res := &securityhub.Resource{
 							Id:           aws.String(v.Resource),
-							Partition:    aws.String("gcp"),
 							ResourceRole: aws.String("Target"),
 						}
 
@@ -179,7 +178,6 @@ func (c *Compliance) mapCompliance(ctx context.Context) []*securityhub.Resource 
 			} else {
 				res := &securityhub.Resource{
 					Id:           aws.String(c.Event.Detail.EventType),
-					Partition:    aws.String("gcp"),
 					ResourceRole: aws.String("Target"),
 					Type:         aws.String("Other"),
 				}
