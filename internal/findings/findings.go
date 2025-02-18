@@ -27,6 +27,7 @@ const (
 	SoftwareCVE           = "Software and Configuration Checks/Vulnerabilities/CVE"
 	SoftwarePolicy        = "Software and Configuration Checks/Policy"
 	AWSCompliance         = "Software and Configuration Checks/Industry and Regulatory Standards/CIS AWS Foundations Benchmark"
+	TtpComposite          = "TTPs/Unusual Behaviors"
 
 	ArnFormat = "arn:aws:securityhub:%s::product/lacework/lacework"
 
