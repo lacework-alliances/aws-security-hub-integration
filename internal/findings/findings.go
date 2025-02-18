@@ -88,7 +88,7 @@ func mapDefault(ctx context.Context, le types.LaceworkEvent) securityhub.AwsSecu
 
 	checkForEmptyTypes := getTypes(cfg.EventMap, le.Detail.EventType)
 	if len(checkForEmptyTypes) == 1 && aws.StringValue(checkForEmptyTypes[0]) == "" {
-		checkForEmptyTypes = []*string{aws.String("Uncategorized/GeneralFinding")} // Default value for missing mype in mappings.go
+		checkForEmptyTypes = []*string{aws.String("Uncategorized/GeneralFinding")} // Default value for missing type in mappings.go
 		fmt.Printf("Unknown EvnetType: %s\n", le.Detail.EventType)
 	}
 	
