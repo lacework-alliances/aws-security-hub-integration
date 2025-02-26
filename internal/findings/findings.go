@@ -39,6 +39,10 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	var category string
 	// get the category to determine finding
 	category = le.Detail.EventCategory
+	// check to see if this is a composite alert
+	if le.Detail.Source == "LWComposite" {
+		category = "Composite"
+	}
 	switch category {
 	case "App":
 		fmt.Println("source is App")
@@ -54,6 +58,11 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 		fmt.Println("source is AWS")
 		a := Aws{Event: le}
 		findings := a.Findings(ctx)
+		fs = append(fs, findings...)
+	case "Composite":
+		fmt.Println("source is Composite")
+		compos := Composite{Event: le}
+		findings := compos.Findings(ctx)
 		fs = append(fs, findings...)
 	case "GcpAuditTrail":
 		finding := mapDefault(ctx, le)
