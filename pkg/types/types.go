@@ -241,17 +241,22 @@ type EventDetails struct {
 }
 
 type Detail struct {
-	EventID       string       `json:"EVENT_ID"`
-	EventName     string       `json:"EVENT_NAME"`
-	EventType     string       `json:"EVENT_TYPE"`
-	Summary       string       `json:"SUMMARY"`
-	StartTime     string       `json:"START_TIME"`
-	EventCategory string       `json:"EVENT_CATEGORY"`
-	Link          string       `json:"LINK"`
-	EventDetails  EventDetails `json:"EVENT_DETAILS"`
-	Severity      int          `json:"SEVERITY"`
-	Account       string       `json:"ACCOUNT"`
-	Source        string       `json:"SOURCE"`
+	EventID         string           `json:"EVENT_ID"`
+	EventName       string           `json:"EVENT_NAME"`
+	EventType       string           `json:"EVENT_TYPE"`
+	Summary         string           `json:"SUMMARY"`
+	StartTime       string           `json:"START_TIME"`
+	EventCategory   string           `json:"EVENT_CATEGORY"`
+	Link            string           `json:"LINK"`
+	EventDetails    EventDetails     `json:"EVENT_DETAILS"`
+	Severity        int              `json:"SEVERITY"`
+	Account         string           `json:"ACCOUNT"`
+	Source          string           `json:"SOURCE"`
+	SupportingFacts []SupportingFact `json:"SUPPORTING_FACTS"`
+}
+
+type SupportingFact struct {
+	Text string `json:"supportingFactText"`
 }
 
 // Honeyvent defines what a Honeycomb event looks like for the AWS Security Hub Integration
