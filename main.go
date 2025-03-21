@@ -47,10 +47,12 @@ func init() {
 }
 
 func main() {
+	eventMap, alertMap := findings.InitMap()
 	cfg := types.Config{
 		DefaultAccount: defaultAccount,
 		Instance:       instance,
-		EventMap:       findings.InitMap(),
+		EventMap:       eventMap,
+		AlertMap:	alertMap,
 		Region:         os.Getenv("AWS_REGION"),
 		Telemetry:      telemetry,
 		Version:        version,
