@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
+	"strings"
 	"strconv"
 	"time"
 )
@@ -23,6 +24,9 @@ func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 	desc := getDescription(a.Event.Detail.Summary)
 	// grab the config struct from the context
 	a.config = ctx.Value("config").(types.Config)
+	// Modifies rapid alerts EventTtpe, which includes spaces, to the originol EventType format in PascalCase
+	a.Event.Detail.EventType = a.replaceEventType(a.Event.Detail.EventType)
+	a.Event.Detail.EventDetails.Data[0].EventType = a.Event.Detail.EventType
 	for _, e := range a.Event.Detail.EventDetails.Data {
 		generatorID := a.Event.Detail.EventCategory
 		finding := securityhub.AwsSecurityFinding{
@@ -93,7 +97,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	// Check the EVENT_TYPE and make decisions
 	switch data.EventType {
 	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion",
-		"UsageOfRootAccount", "FailedConsoleLogin", "CLoudTrailDefaultAlert":
+		"UsageOfRootAccount", "FailedConsoleLogin", "CLoudTrailDefaultAlert", "CloudTrailStopped":
 		if len(data.EntityMap.CtUser[0].Username) > 64 {
 			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
 		} else {
@@ -113,7 +117,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 
 	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "S3BucketACLChanged",
 		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
-		"NewGrantAddedToCustomerMasterKey":
+		"NewGrantAddedToCustomerMasterKey", "CloudTrailChanged":
 		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
 		if len(rule) > 64 {
 			id = aws.String(rule[:64])
@@ -128,6 +132,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(data.EntityMap.CtUser[0].Username)
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "IAMAccessKeyChanged":
 		if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
@@ -135,6 +140,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "NewRegion", "NewVPC":
 		if len(data.EntityMap.Region[0].Region) > 64 {
@@ -142,6 +148,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		} else {
 			id = aws.String(data.EntityMap.Region[0].Region)
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "NewS3Bucket", "S3BucketDeleted":
 		for _, resource := range data.EntityMap.Resource {
@@ -153,8 +160,9 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 				}
 			}
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 
-	case "CloudTrailChanged", "CloudTrailDeleted":
+	case "CloudTrailDeleted":
 		for _, resource := range data.EntityMap.Resource {
 			if resource.Name == "name" {
 				if len(resource.Value) > 64 {
@@ -164,6 +172,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 				}
 			}
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "CloudTrailDefaultAlert":
 		if len(data.EntityMap.CtUser) > 0 {
@@ -187,6 +196,7 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 		if a.config.Telemetry {
 			lacework.SendHoneycombEvent(a.config.Instance, "cloudtrail_event_type_not_found", "", a.config.Version, string(t), "otherDetails", a.config.HoneyKey, a.config.HoneyDataset)
 		}
+		addToMap(a.ctUser(data.EntityMap.CtUser))
 	}
 	return id, otherMap
 }
@@ -247,4 +257,16 @@ func (a Aws) API(apis []types.API) map[string]*string {
 		}
 	}
 	return other
+}
+
+// checks for low latency alert, changes event type to supported versionm
+func (a Aws) replaceEventType(etype string) string {
+	if strings.Contains(a.Event.Detail.EventType, " ") {
+		if mappedType, exists := a.config.AlertMap[a.Event.Detail.EventType]; exists {
+			etype = mappedType
+		} else {
+			fmt.Println("Found another issue with mytypes alert: ", a.Event.Detail.EventType)
+		}
+	}
+	return etype
 }
