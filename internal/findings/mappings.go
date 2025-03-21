@@ -1,7 +1,7 @@
 package findings
 
 // InitMap initializes maps based on the event type to an AWS Finding Type
-func InitMap() map[string]string {
+func InitMap() (map[string]string, map[string]string) {
 	// map[EVENT_TYPE]SEC_HUB_TYPE{}
 	var eventMap = map[string]string{}
 
@@ -171,5 +171,39 @@ func InitMap() map[string]string {
 	eventMap["NewK8sAuditLogUser"] = TtpDiscovery
 	eventMap["NewK8sAuditLogIngress"] = TtpDiscovery
 
-	return eventMap
+	var alertMap = map[string]string{}
+
+
+	alertMap["Virtual Private Cloud (VPC) Change"] = "VPCChange"
+	alertMap["S3 Bucket Deleted"] = "S3BucketDeleted"
+	alertMap["S3 Bucket Policy Change"] = "S3BucketPolicyChanged"
+	alertMap["Identity and Access Management (IAM) Policy Change"] = "IAMPolicyChanged"
+	alertMap["Identity and Access Management (IAM) Access Key Change"] = "IAMAccessKeyChanged"
+	alertMap["New AWS User Created"] = "NewUser"
+	alertMap["New Key Management Service (KMS) Key"] = "NewCustomerMasterKey"
+	alertMap["New Key Management Service (KMS) Key Alias"] = "NewCustomerMasterKeyAlias"
+	alertMap["Key Management Service (KMS) Key Disabled"] = "CustomerMasterKeyDisabled"
+	alertMap["Key Management Service (KMS) Key Scheduled for Deletion"] = "CustomerMasterKeyScheduledForDeletion"
+	alertMap["Security Group Change"] = "SecurityGroupChange"
+	alertMap["CloudTrail Change"] = "CloudTrailChanged"
+	alertMap["Failed Console Login"] = "FailedConsoleLogin"
+	alertMap["Access Key Deleted"] = "AccessKeyDeleted"
+	alertMap["CloudTrail Deleted"] = "CloudTrailDeleted"
+	alertMap["CloudTrail Stopped"] = "CloudTrailStopped"
+	alertMap["New Access Key"] = "NewAccessKey"
+	alertMap["New Virtual Private Cloud (VPC)"] = "NewVPC"
+	alertMap["Unauthorized API Call"] = "UnauthorizedAPICall"
+	alertMap["Network Access Control List (NACL) Change"] = "NACLChange"
+	alertMap["S3 Bucket Access Control List (ACL) Change"] = "S3BucketACLChanged"
+	alertMap["Network Gateway Change"] = "NetworkGatewayChange"
+	alertMap["Route Table Change"] = "RouteTableChange"
+	alertMap["New Virtual Private Network (VPN) Connection"] = "NewVPNConnection"
+	alertMap["Usage of Root Account"] = "UsageOfRootAccount"
+	alertMap["New S3 Bucket"] = "NewS3Bucket"
+	alertMap["Virtual Private Network (VPN) Gateway Change"] = "VPNGatewayChange"
+	alertMap["New Grant Added to Key Management Service (KMS) Key"] = "NewGrantAddedToCustomerMasterKey"
+	alertMap["Successful Non Security Assertion Markup Language (SAML) Console Login Without Multi-Factor Authentication (MFA)"] = "SuccessfulConsoleLoginWithoutMFA"
+	alertMap["Configuration Service Change"] = "ConfigServiceChange"
+
+	return eventMap, alertMap
 }
