@@ -6,6 +6,7 @@ type Config struct {
 	DefaultAccount string
 	Instance       string
 	EventMap       map[string]string
+	AlertMap       map[string]string
 	Region         string
 	Telemetry      bool
 	Version        string
