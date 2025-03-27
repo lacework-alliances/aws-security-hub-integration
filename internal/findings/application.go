@@ -81,7 +81,7 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 	var id *string
 	switch data.EventType {
 	case "NewExternalClientBadIp", "NewExternalClientConn", "NewExternalServerIp", "NewChildLaunched",
-		"NewExternalServerDNSConn", "NewInternalConnection", "NewBinaryType", "NewExternalServerBadDns":
+		"NewExternalServerDNSConn", "NewInternalConnection", "NewBinaryType", "NewExternalServerBadDns", "NewVulnBinaryType":
 		if len(data.EntityMap.Container) > 0 {
 			image := fmt.Sprintf("%s:%s", data.EntityMap.Container[0].IMAGEREPO, data.EntityMap.Container[0].IMAGETAG)
 			if len(image) > 64 {

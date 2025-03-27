@@ -203,6 +203,11 @@ func (c *Compliance) getTypes() []*string {
 	}
 
 	t := fmt.Sprintf("Software and Configuration Checks/Lacework/%s", reason)
+	// If Types contains more than two "/", it will fail to meet ASFF requirements
+	parts := strings.Split(t, "/")
+	if len(parts) > 2 {
+		t = strings.Join(parts[:2], "/") + ":" + strings.Join(parts[2:], ":")
+	}
 	tList = append(tList, aws.String(t))
 	return tList
 }
