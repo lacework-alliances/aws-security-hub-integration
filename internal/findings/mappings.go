@@ -35,6 +35,7 @@ func InitMap() (map[string]string, map[string]string) {
 	eventMap["NewErrorDns"] = UnusualNetwork
 	eventMap["NewDnsQueryToCountry"] = TtpInitialAccess
 	eventMap["NewBinaryType"] = TtpDiscovery
+	eventMap["NewVulnBinaryType"] = TtpDiscovery
 	eventMap["NewMachineServerCluster"] = TtpDiscovery
 	eventMap["NewUser"] = TtpDiscovery
 	eventMap["NewPrivilegeEscalation"] = TtpPrivilege
