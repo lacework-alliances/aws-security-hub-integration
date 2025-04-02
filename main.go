@@ -69,6 +69,9 @@ func handler(ctx context.Context, e events.SQSEvent) {
 	eventCount := 0
 	for _, message := range e.Records {
 		fmt.Printf("%s \n", message.Body)
+		if telemetry {
+			lacework.SendHoneycombEvent(instance, "event", "", version, string(message.Body), "record", HONEYKEY, DATASET)
+		}
 		body := bytes.TrimPrefix([]byte(message.Body), []byte("\xef\xbb\xbf"))
 		err := json.Unmarshal(body, &event)
 		if err != nil {
