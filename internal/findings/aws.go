@@ -176,10 +176,15 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 
 	case "CloudTrailDefaultAlert":
 		if len(data.EntityMap.CtUser) > 0 {
-			if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
-				id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+			user := data.EntityMap.CtUser[0]
+			identifier := user.PrincipalID
+			if identifier == "" {
+				identifier = user.Username
+			}
+			if len(identifier) > 64 {
+				id = aws.String(identifier[:64])
 			} else {
-				id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+				id = aws.String(identifier)
 			}
 			addToMap(a.ctUser(data.EntityMap.CtUser))
 		}
