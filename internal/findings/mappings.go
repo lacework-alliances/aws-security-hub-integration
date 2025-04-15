@@ -172,6 +172,8 @@ func InitMap() (map[string]string, map[string]string) {
 	eventMap["NewK8sAuditLogUser"] = TtpDiscovery
 	eventMap["NewK8sAuditLogIngress"] = TtpDiscovery
 
+	eventMap["LowLatencyUncategorized"] = TtpDiscovery
+
 	var alertMap = map[string]string{}
 
 
