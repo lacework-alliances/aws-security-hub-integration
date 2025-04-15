@@ -270,7 +270,8 @@ func (a Aws) replaceEventType(etype string) string {
 		if mappedType, exists := a.config.AlertMap[a.Event.Detail.EventType]; exists {
 			etype = mappedType
 		} else {
-			fmt.Println("Found another issue with mytypes alert: ", a.Event.Detail.EventType)
+			fmt.Println("Found unmapped alert: ", a.Event.Detail.EventType)
+			etype = "LowLatencyUncategorized"
 		}
 	}
 	return etype
