@@ -13,7 +13,6 @@ import (
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/findings"
 	"github.com/lacework-alliances/aws-security-hub-integration/internal/lacework"
 	"github.com/lacework-alliances/aws-security-hub-integration/pkg/types"
-	"log"
 	"os"
 )
 
@@ -94,7 +93,6 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				fmt.Println("ERROR: while creating aws session: ", err)
 			}
 			svc := securityhub.New(sess)
-			//log.Printf("%+v", batch.Findings)
 			//fmt.Printf("Sending %d finding(s) to Security Hub\n", len(batch.Findings))
 			output, err := svc.BatchImportFindings(&batch)
 			if err != nil {
