@@ -73,7 +73,7 @@ func EventToASFF(ctx context.Context, le types.LaceworkEvent) []*securityhub.Aws
 	case "TestEvent":
 		return fs
 	case "SGM":
-		fmt.Println("aource is SGM... CIEM alerts not currently supported, skipping alert...")
+		fmt.Println("Source is SGM... CIEM alerts not currently supported, skipping alert...")
 		return fs
 	default:
 		fmt.Printf("Unknown category: %s\n", category)
