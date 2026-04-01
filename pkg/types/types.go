@@ -1,6 +1,27 @@
 package types
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
+
+// FlexString accepts both JSON strings and numbers during unmarshaling.
+type FlexString string
+
+func (f *FlexString) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*f = FlexString(s)
+		return nil
+	}
+	var n json.Number
+	if err := json.Unmarshal(data, &n); err == nil {
+		*f = FlexString(n.String())
+		return nil
+	}
+	return fmt.Errorf("EVENT_ID must be a string or number, got: %s", string(data))
+}
 
 type Config struct {
 	DefaultAccount string
@@ -234,7 +255,7 @@ type Data struct {
 	EventType  string    `json:"EVENT_TYPE"`
 	EntityMap  EntityMap `json:"ENTITY_MAP"`
 	EventActor string    `json:"EVENT_ACTOR"`
-	EventID    string    `json:"EVENT_ID"`
+	EventID    FlexString `json:"EVENT_ID"`
 }
 
 type EventDetails struct {
@@ -242,7 +263,7 @@ type EventDetails struct {
 }
 
 type Detail struct {
-	EventID         string           `json:"EVENT_ID"`
+	EventID         FlexString       `json:"EVENT_ID"`
 	EventName       string           `json:"EVENT_NAME"`
 	EventType       string           `json:"EVENT_TYPE"`
 	Summary         string           `json:"SUMMARY"`

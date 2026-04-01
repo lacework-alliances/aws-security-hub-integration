@@ -147,14 +147,19 @@ func getSeverity(s int) *securityhub.Severity {
 	switch s {
 	case 1:
 		severity.Label = aws.String(securityhub.SeverityLabelCritical)
+		severity.Normalized = aws.Int64(90)
 	case 2:
 		severity.Label = aws.String(securityhub.SeverityLabelHigh)
+		severity.Normalized = aws.Int64(70)
 	case 3:
 		severity.Label = aws.String(securityhub.SeverityLabelMedium)
+		severity.Normalized = aws.Int64(40)
 	case 4:
 		severity.Label = aws.String(securityhub.SeverityLabelLow)
+		severity.Normalized = aws.Int64(20)
 	case 5:
 		severity.Label = aws.String(securityhub.SeverityLabelInformational)
+		severity.Normalized = aws.Int64(0)
 	}
 	return &severity
 }
