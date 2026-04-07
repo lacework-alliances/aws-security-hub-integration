@@ -23,6 +23,28 @@ func (f *FlexString) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("EVENT_ID must be a string or number, got: %s", string(data))
 }
 
+// FlexInt accepts both JSON numbers and strings during unmarshaling.
+type FlexInt int
+
+func (f *FlexInt) UnmarshalJSON(data []byte) error {
+	var i int
+	if err := json.Unmarshal(data, &i); err == nil {
+		*f = FlexInt(i)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		var n int
+		if _, err := fmt.Sscanf(s, "%d", &n); err == nil {
+			*f = FlexInt(n)
+			return nil
+		}
+		*f = 0
+		return nil
+	}
+	return fmt.Errorf("SEVERITY must be a number or string, got: %s", string(data))
+}
+
 type Config struct {
 	DefaultAccount string
 	Instance       string
@@ -51,7 +73,7 @@ type Cve struct {
 	FeatureName string `json:"FEATURE_NAME"`
 	CveID       string `json:"CVE_ID"`
 	Info        string `json:"INFO"`
-	Severity    int    `json:"SEVERITY"`
+	Severity    FlexInt `json:"SEVERITY"`
 }
 
 type CustomRule struct {
@@ -105,7 +127,7 @@ type Rule struct {
 	RuleTitle       string `json:"RULES_TITLE"`
 	RuleID          string `json:"RULE_ID"`
 	RuleDescription string `json:"RULE_DESCRIPTION"`
-	RuleSeverity    int    `json:"RULE_SEVERITY"`
+	RuleSeverity    FlexInt `json:"RULE_SEVERITY"`
 }
 
 type SourceIpAddress struct {
@@ -271,7 +293,7 @@ type Detail struct {
 	EventCategory   string           `json:"EVENT_CATEGORY"`
 	Link            string           `json:"LINK"`
 	EventDetails    EventDetails     `json:"EVENT_DETAILS"`
-	Severity        int              `json:"SEVERITY"`
+	Severity        FlexInt          `json:"SEVERITY"`
 	Account         string           `json:"ACCOUNT"`
 	Source          string           `json:"SOURCE"`
 	SupportingFacts []SupportingFact `json:"SUPPORTING_FACTS"`

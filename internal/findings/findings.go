@@ -142,7 +142,7 @@ func mapToResource(data []types.Data) []*securityhub.Resource {
 	return resourceList
 }
 
-func getSeverity(s int) *securityhub.Severity {
+func getSeverity(s types.FlexInt) *securityhub.Severity {
 	var severity securityhub.Severity
 	switch s {
 	case 1:
@@ -158,6 +158,9 @@ func getSeverity(s int) *securityhub.Severity {
 		severity.Label = aws.String(securityhub.SeverityLabelLow)
 		severity.Normalized = aws.Int64(20)
 	case 5:
+		severity.Label = aws.String(securityhub.SeverityLabelInformational)
+		severity.Normalized = aws.Int64(0)
+	default:
 		severity.Label = aws.String(securityhub.SeverityLabelInformational)
 		severity.Normalized = aws.Int64(0)
 	}
