@@ -102,7 +102,7 @@ func handler(ctx context.Context, e events.SQSEvent) {
 				}
 				fmt.Println(errStr)
 			}
-			if output != nil && *output.FailedCount > int64(0) {
+			if output != nil && output.FailedCount != nil && *output.FailedCount > int64(0) {
 				errStr := fmt.Sprintf("ERROR: Failed Account: %s - Failed Region: %s \n %s \n", event.Account, event.Region, output.String())
 				fmt.Println(errStr)
 				if telemetry {

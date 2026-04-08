@@ -26,7 +26,9 @@ func (a Aws) Findings(ctx context.Context) []*securityhub.AwsSecurityFinding {
 	a.config = ctx.Value("config").(types.Config)
 	// Modifies rapid alerts EventTtpe, which includes spaces, to the originol EventType format in PascalCase
 	a.Event.Detail.EventType = a.replaceEventType(a.Event.Detail.EventType)
-	a.Event.Detail.EventDetails.Data[0].EventType = a.Event.Detail.EventType
+	if len(a.Event.Detail.EventDetails.Data) > 0 {
+		a.Event.Detail.EventDetails.Data[0].EventType = a.Event.Detail.EventType
+	}
 	for _, e := range a.Event.Detail.EventDetails.Data {
 		generatorID := a.Event.Detail.EventCategory
 		finding := securityhub.AwsSecurityFinding{
@@ -56,16 +58,24 @@ func (a Aws) resource(data types.Data) []*securityhub.Resource {
 	// create the basic resource
 	switch data.EventType {
 	case "NewUser", "NewAccount":
-		res = securityhub.Resource{
-			ResourceRole: aws.String("Target"),
-			Type:         aws.String("AwsIamUser"),
-			Partition:    aws.String("aws"),
-			Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
-			Region:       aws.String(data.EntityMap.Region[0].Region),
-			Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
-				UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
-				UserName: aws.String(data.EntityMap.CtUser[0].Username),
-			}},
+		if len(data.EntityMap.CtUser) > 0 && len(data.EntityMap.Region) > 0 {
+			res = securityhub.Resource{
+				ResourceRole: aws.String("Target"),
+				Type:         aws.String("AwsIamUser"),
+				Partition:    aws.String("aws"),
+				Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
+				Region:       aws.String(data.EntityMap.Region[0].Region),
+				Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
+					UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
+					UserName: aws.String(data.EntityMap.CtUser[0].Username),
+				}},
+			}
+		} else {
+			res = securityhub.Resource{
+				Details: &securityhub.ResourceDetails{},
+				Type:    aws.String("Other"),
+				Id:      aws.String("unknown"),
+			}
 		}
 	default:
 		res = securityhub.Resource{
@@ -98,55 +108,79 @@ func (a Aws) otherDetails(data types.Data) (*string, map[string]*string) {
 	switch data.EventType {
 	case "UserUsedServiceInRegion", "ServiceAccessedInRegion", "NewService", "NewCustomerMasterKey", "CustomerMasterKeyScheduledForDeletion",
 		"UsageOfRootAccount", "FailedConsoleLogin", "CLoudTrailDefaultAlert", "CloudTrailStopped":
-		if len(data.EntityMap.CtUser[0].Username) > 64 {
-			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		if len(data.EntityMap.CtUser) > 0 {
+			if len(data.EntityMap.CtUser[0].Username) > 64 {
+				id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+			} else {
+				id = aws.String(data.EntityMap.CtUser[0].Username)
+			}
 		} else {
-			id = aws.String(data.EntityMap.CtUser[0].Username)
+			id = aws.String("unknown")
 		}
 		addToMap(a.ipAddress(data.EntityMap.SourceIpAddress))
 		addToMap(a.API(data.EntityMap.API))
 
 	case "UnauthorizedAPICall", "IAMPolicyChanged", "NetworkGatewayChange", "RouteTableChange", "SecurityGroupChange":
-		rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
-		if len(rule) > 64 {
-			id = aws.String(rule[:64])
+		if len(data.EntityMap.RulesTriggered) > 0 {
+			rule := fmt.Sprintf("%s(s)-%s", data.EntityMap.RulesTriggered[0].RuleTitle, data.EntityMap.RulesTriggered[0].RuleID)
+			if len(rule) > 64 {
+				id = aws.String(rule[:64])
+			} else {
+				id = aws.String(rule)
+			}
 		} else {
-			id = aws.String(rule)
+			id = aws.String("unknown")
 		}
 		addToMap(a.rule(data.EntityMap.RulesTriggered))
 
 	case "SuccessfulConsoleLoginWithoutMFA", "ServiceCalledApi", "S3BucketPolicyChanged", "S3BucketACLChanged",
 		"LoginFromSourceUsingCalltype", "ApiFailedWithError", "AwsAccountFailedApi", "NewCustomerMasterKeyAlias",
 		"NewGrantAddedToCustomerMasterKey", "CloudTrailChanged":
-		rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
-		if len(rule) > 64 {
-			id = aws.String(rule[:64])
+		if len(data.EntityMap.CtUser) > 0 {
+			rule := fmt.Sprintf("%s-%s", data.EntityMap.CtUser[0].PrincipalID, data.EntityMap.CtUser[0].Username)
+			if len(rule) > 64 {
+				id = aws.String(rule[:64])
+			} else {
+				id = aws.String(rule)
+			}
 		} else {
-			id = aws.String(rule)
+			id = aws.String("unknown")
 		}
 		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "NewUser", "VPCChange":
-		if len(data.EntityMap.CtUser[0].Username) > 64 {
-			id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+		if len(data.EntityMap.CtUser) > 0 {
+			if len(data.EntityMap.CtUser[0].Username) > 64 {
+				id = aws.String(data.EntityMap.CtUser[0].Username[:64])
+			} else {
+				id = aws.String(data.EntityMap.CtUser[0].Username)
+			}
 		} else {
-			id = aws.String(data.EntityMap.CtUser[0].Username)
+			id = aws.String("unknown")
 		}
 		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "IAMAccessKeyChanged":
-		if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
-			id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+		if len(data.EntityMap.CtUser) > 0 {
+			if len(data.EntityMap.CtUser[0].PrincipalID) > 64 {
+				id = aws.String(data.EntityMap.CtUser[0].PrincipalID[:64])
+			} else {
+				id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+			}
 		} else {
-			id = aws.String(data.EntityMap.CtUser[0].PrincipalID)
+			id = aws.String("unknown")
 		}
 		addToMap(a.ctUser(data.EntityMap.CtUser))
 
 	case "NewRegion", "NewVPC":
-		if len(data.EntityMap.Region[0].Region) > 64 {
-			id = aws.String(data.EntityMap.Region[0].Region[:64])
+		if len(data.EntityMap.Region) > 0 {
+			if len(data.EntityMap.Region[0].Region) > 64 {
+				id = aws.String(data.EntityMap.Region[0].Region[:64])
+			} else {
+				id = aws.String(data.EntityMap.Region[0].Region)
+			}
 		} else {
-			id = aws.String(data.EntityMap.Region[0].Region)
+			id = aws.String("unknown")
 		}
 		addToMap(a.ctUser(data.EntityMap.CtUser))
 

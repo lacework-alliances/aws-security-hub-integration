@@ -52,16 +52,24 @@ func (a App) resource(data types.Data) []*securityhub.Resource {
 	// create the basic resource
 	switch data.EventType {
 	case "":
-		res = securityhub.Resource{
-			ResourceRole: aws.String("Target"),
-			Type:         aws.String("AwsIamUser"),
-			Partition:    aws.String("aws"),
-			Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
-			Region:       aws.String(data.EntityMap.Region[0].Region),
-			Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
-				UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
-				UserName: aws.String(data.EntityMap.CtUser[0].Username),
-			}},
+		if len(data.EntityMap.CtUser) > 0 && len(data.EntityMap.Region) > 0 {
+			res = securityhub.Resource{
+				ResourceRole: aws.String("Target"),
+				Type:         aws.String("AwsIamUser"),
+				Partition:    aws.String("aws"),
+				Id:           aws.String(data.EntityMap.CtUser[0].PrincipalID),
+				Region:       aws.String(data.EntityMap.Region[0].Region),
+				Details: &securityhub.ResourceDetails{AwsIamUser: &securityhub.AwsIamUserDetails{
+					UserId:   aws.String(data.EntityMap.CtUser[0].PrincipalID),
+					UserName: aws.String(data.EntityMap.CtUser[0].Username),
+				}},
+			}
+		} else {
+			res = securityhub.Resource{
+				Details: &securityhub.ResourceDetails{},
+				Type:    aws.String("Other"),
+				Id:      aws.String("unknown"),
+			}
 		}
 	default:
 		res = securityhub.Resource{
@@ -89,13 +97,14 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 			} else {
 				id = aws.String(image)
 			}
-		} else {
+		} else if len(data.EntityMap.Machine) > 0 {
 			if len(data.EntityMap.Machine[0].Hostname) > 64 {
 				id = aws.String(data.EntityMap.Machine[0].Hostname[:64])
 			} else {
 				id = aws.String(data.EntityMap.Machine[0].Hostname)
 			}
-
+		} else {
+			id = aws.String("unknown")
 		}
 		if len(data.EntityMap.Container) > 0 {
 			containerMap := a.container(data.EntityMap.Container)
@@ -201,14 +210,14 @@ func (a App) otherDetails(data types.Data) (*string, map[string]*string) {
 			}
 		}
 	case "NewK8Pod":
-		if len(data.EntityMap.K8Pod) > 0 {
+		if len(data.EntityMap.K8Pod) > 0 && len(data.EntityMap.K8Pod[0].NAMESPACE) > 0 {
 			pod := fmt.Sprintf("%s:%s", data.EntityMap.K8Pod[0].NAMESPACE[0], data.EntityMap.K8Pod[0].POD)
 			if len(pod) > 64 {
 				id = aws.String(pod[:64])
 			} else {
 				id = aws.String(pod)
 			}
-		} else if len(data.EntityMap.K8Namespace) > 0 {
+		} else if len(data.EntityMap.K8Namespace) > 0 && len(data.EntityMap.K8Namespace[0].POD) > 0 {
 			pod := fmt.Sprintf("%s:%s", data.EntityMap.K8Namespace[0].NAMESPACE, data.EntityMap.K8Namespace[0].POD[0])
 			if len(pod) > 64 {
 				id = aws.String(pod[:64])
@@ -452,6 +461,9 @@ func (a App) dns(dns []types.DnsName) map[string]*string {
 
 func (a App) imageId(images []types.Imageid) map[string]*string {
 	other := make(map[string]*string)
+	if len(images) == 0 {
+		return other
+	}
 	img := fmt.Sprintf("%s:%s", images[0].ImageRepo, images[0].ImageID)
 	other["IMAGE"] = aws.String(img)
 	other["IMAGE_ACTIVE"] = aws.String(isActive(images[0].ImageActive))
