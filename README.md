@@ -1,3 +1,13 @@
+# This repo is archived. Please use the FortiCNAPP console to set up the FortiCNAPP AWS Security Hub Outbound integration:
+
+1. Log in to the FortiCNAPP console.
+2. Go to Settings > Notifications > Channels.
+3. Click Add destination.
+4. Select AWS Security Hub and click Next.
+5. Deploy with the Terraform tab or the CloudFormation tab.
+
+Before deploying, run `terraform destroy` in `deploy/terraform` (or delete the stack deployed from this repo). Running both side by side imports every alert into Security Hub twice, and the Terraform option fails outright while the old stack exists because both create the `lw-sechub-role` IAM role and `lw-sechub-integration` Lambda.
+
 # Lacework FortiCNAPP AWS Security Hub Integration
 
 ![Fortinet-logo-rgb-black-red](https://github.com/user-attachments/assets/76ca9e76-577e-4c30-ace8-74a7961e5a87)
